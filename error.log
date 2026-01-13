@@ -1,0 +1,1 @@
+{"level":"error","message":"Database initialization failed: Unknown column 'deleted_at' in 'where clause'","service":"user-service","timestamp":"2026-01-13T16:22:26.354Z"}

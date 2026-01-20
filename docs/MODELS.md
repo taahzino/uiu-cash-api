@@ -2,9 +2,9 @@
 
 ## Overview
 
-All database models use **CHAR(8)** for primary keys with custom nanoid generation using alphabet `A-Z0-9`.
+All database models use **CHAR(8)** for primary keys with custom nanoid generation using alphabet `A-Z0-9` (except `platform_wallet_transactions` which uses INT AUTO_INCREMENT).
 
-## Model Summary (15 Total)
+## Model Summary (16 Total)
 
 ### ✅ Completed Models
 
@@ -224,6 +224,43 @@ All database models use **CHAR(8)** for primary keys with custom nanoid generati
 
 ---
 
+#### **16. PlatformWalletTransactions** (`platform_wallet_transactions`)
+
+- **Purpose**: Track all platform wallet financial activities for admin dashboard statistics
+- **Transaction Types**:
+  - FEE_COLLECTED (send money, cash out, etc.)
+  - COMMISSION_PAID (agent commissions)
+  - BONUS_GIVEN (user bonuses)
+  - CASHBACK_GIVEN (promotional cashback)
+  - REVENUE_OTHER, EXPENSE_OTHER, SETTLEMENT, ADJUSTMENT
+- **Entry Types**: CREDIT (money in), DEBIT (money out)
+- **Features**:
+  - transaction_type, entry_type
+  - amount, balance_before, balance_after
+  - related_transaction_id, related_user_id, related_agent_id
+  - description, metadata (JSON)
+  - Immutable records for audit trail
+- **Key Methods**: 
+  - createTransaction, findById
+  - getHistory (with pagination and filters)
+  - getStatistics (total fees, commissions, bonuses, net revenue)
+  - findByTransactionId, findByUserId
+- **Statistics Support**:
+  - Total fees collected
+  - Total commissions paid
+  - Total bonuses given
+  - Total cashback given
+  - Net revenue (credits - debits)
+  - Current platform wallet balance
+- **Relationships**:
+  - Many-to-one → Transactions (related_transaction_id, SET NULL)
+  - Many-to-one → Users (related_user_id, SET NULL)
+  - Many-to-one → Agents (related_agent_id, SET NULL)
+- **Primary Key**: INT AUTO_INCREMENT (different from other models)
+- **Synchronized With**: `simulation/platform_wallet/data.json` for balance tracking
+
+---
+
 ## Platform Wallet (Simulation-Based)
 
 Platform finances are managed through a simulation module instead of a database table:
@@ -234,6 +271,7 @@ Platform finances are managed through a simulation module instead of a database 
 - **Operations**: Deduct (৳50 bonuses), Credit (fees), Balance validation
 - **Tracking**: Total revenue, total bonuses given, total commissions paid
 - **API**: `getBalance()`, `hasSufficientBalance()`, `deductBalance()`, `creditBalance()`, `getStatistics()`
+- **Database Integration**: All operations now automatically recorded to `platform_wallet_transactions` table
 - **See**: `simulation/platform_wallet/README.md` for detailed documentation
 
 ---
@@ -243,14 +281,15 @@ Platform finances are managed through a simulation module instead of a database 
 1. **Level 1 - Base Tables**: Users, Admins
 2. **Level 2 - User-Related**: Wallets, Billers, Agents, Sessions
 3. **Level 3 - Transactions**: Transactions
-4. **Level 4 - Transaction-Dependent**: Ledgers, AgentCashouts, BillPayments, BankTransfers
+4. **Level 4 - Transaction-Dependent**: Ledgers, AgentCashouts, BillPayments, BankTransfers, PlatformWalletTransactions
 5. **Level 5 - Offers**: Offers, UserOffers
 6. **Level 6 - System**: AuditLogs, SystemConfig, SettlementAccounts
 
 ---
 
-## Foreign Key Cascade Rules
+### Foreign Key Cascade Rules
 
+**CASCADE DELETE**:
 
 - wallets.user_id → users.id
 - agents.user_id → users.id
@@ -268,6 +307,7 @@ Platform finances are managed through a simulation module instead of a database 
 - user_offers.user_id → users.id
 - user_offers.offer_id → offers.id
 
+**SET NULL**:
 
 - billers.created_by → admins.id
 - agents.approved_by → admins.id
@@ -277,6 +317,9 @@ Platform finances are managed through a simulation module instead of a database 
 - transactions.receiver_wallet_id → wallets.id
 - audit_logs.user_id → users.id
 - audit_logs.admin_id → admins.id
+- platform_wallet_transactions.related_transaction_id → transactions.id
+- platform_wallet_transactions.related_user_id → users.id
+- platform_wallet_transactions.related_agent_id → agents.id
 
 ---
 
@@ -299,11 +342,12 @@ Platform finances are managed through a simulation module instead of a database 
 
 ## Database Status
 
-✅ **All 17 tables successfully initialized**
+✅ **All 18 tables successfully initialized**
 ✅ **Foreign key relationships working correctly**
 ✅ **Default admin account created** (admin@uiucash.com)
 ✅ **TypeScript compilation successful**
 ✅ **Logger integration complete**
+✅ **Platform wallet transaction tracking implemented**
 
 ---
 
@@ -312,11 +356,12 @@ Platform finances are managed through a simulation module instead of a database 
 1. ✅ Create remaining models
 2. ✅ Update init-db.ts
 3. ✅ Initialize all tables
-4. ⏳ Implement transaction services
+4. ✅ Implement transaction services (add money, send money)
 5. ⏳ Implement wallet services
 6. ⏳ Implement user authentication APIs
 7. ⏳ Implement admin APIs
 8. ⏳ Implement agent APIs
+9. ⏳ Implement platform wallet statistics dashboard
 10. ⏳ Add API documentation
 
 ---
@@ -341,7 +386,8 @@ src/models/
 ├── Sessions.model.ts
 ├── AuditLogs.model.ts
 ├── SystemConfig.model.ts
-└── SettlementAccounts.model.ts
+├── SettlementAccounts.model.ts
+└── PlatformWalletTransactions.model.ts
 ```
 
 ---
@@ -354,4 +400,4 @@ Run this command to verify all tables:
 mysql -u root -p uiu_cash_db -e "SHOW TABLES;"
 ```
 
-Expected output: 17 tables
+Expected output: 18 tables

@@ -1727,50 +1727,124 @@ async function detectFraud(transaction: Transaction): Promise<FraudScore> {
 
 #### 8.3.2 Transaction History
 
-**API Endpoint**: `GET /api/wallet/transactions`
+**API Endpoint**: `GET /api/transactions/history`
 
 **Headers**: `Authorization: Bearer <token>`
 
 **Query Parameters**:
 
-- `page`: Page number (default: 1)
-- `limit`: Items per page (default: 20)
-- `type`: Transaction type filter
-- `status`: Transaction status filter
-- `fromDate`: Start date
-- `toDate`: End date
+- `page`: Page number (default: 1, min: 1)
+- `limit`: Items per page (default: 20, min: 1, max: 100)
+- `type`: Transaction type filter (optional)
+  - Values: SEND_MONEY, ADD_MONEY, CASH_OUT, CASH_IN, BILL_PAYMENT, BANK_TRANSFER, CASHBACK, COMMISSION, ONBOARDING_BONUS
+- `status`: Transaction status filter (optional)
+  - Values: PENDING, PROCESSING, COMPLETED, FAILED
+
+**Example Request**:
+```
+GET /api/transactions/history?page=1&limit=20&type=SEND_MONEY&status=COMPLETED
+```
 
 **Response**:
 
 ```json
 {
   "success": true,
+  "message": "Transaction history retrieved successfully",
   "data": {
     "transactions": [
       {
         "id": "uuid",
-        "transactionId": "TRX20251228001",
+        "transaction_id": "TRX20251228001",
         "type": "SEND_MONEY",
         "amount": 500.0,
         "fee": 5.0,
-        "totalAmount": 505.0,
         "status": "COMPLETED",
         "description": "Payment for services",
-        "recipient": {
-          "name": "Jane Smith",
-          "phone": "+8801712345679"
-        },
-        "createdAt": "2025-12-28T10:30:00Z"
+        "created_at": "2025-12-28T10:30:00Z",
+        "completed_at": "2025-12-28T10:30:05Z"
       }
     ],
     "pagination": {
       "currentPage": 1,
       "totalPages": 5,
       "totalItems": 95,
-      "itemsPerPage": 20
+      "itemsPerPage": 20,
+      "hasNextPage": true,
+      "hasPreviousPage": false
     }
   }
 }
+```
+
+**Business Logic**:
+1. Authenticate user
+2. Validate pagination parameters
+3. Apply optional filters (type, status)
+4. Fetch transactions where user is sender OR receiver
+5. Return paginated results with metadata
+
+#### 8.3.3 Transaction Details
+
+**API Endpoint**: `GET /api/transactions/:id`
+
+**Headers**: `Authorization: Bearer <token>`
+
+**Path Parameters**:
+- `id`: Transaction ID (8 characters)
+
+**Example Request**:
+```
+GET /api/transactions/TRX20251228001
+```
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "Transaction details retrieved successfully",
+  "data": {
+    "id": "uuid",
+    "transaction_id": "TRX20251228001",
+    "type": "SEND_MONEY",
+    "amount": 500.0,
+    "fee": 5.0,
+    "status": "COMPLETED",
+    "description": "Payment for services",
+    "created_at": "2025-12-28T10:30:00Z",
+    "completed_at": "2025-12-28T10:30:05Z",
+    "sender": {
+      "id": "uuid",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+8801712345678"
+    },
+    "receiver": {
+      "id": "uuid",
+      "name": "Jane Smith",
+      "email": "jane@example.com",
+      "phone": "+8801712345679"
+    },
+    "metadata": {
+      "recipient_phone": "+8801712345679",
+      "recipient_email": "jane@example.com"
+    }
+  }
+}
+```
+
+**Business Logic**:
+1. Authenticate user
+2. Fetch transaction by ID
+3. Verify user is authorized (must be sender or receiver)
+4. Fetch sender details if user is receiver
+5. Fetch receiver details if user is sender
+6. Return full transaction details
+
+**Authorization**:
+- User can only view transactions where they are the sender OR receiver
+- Returns 403 Forbidden if user tries to access unauthorized transaction
 ```
 
 ### 8.4 Send Money (P2P Transfer)
@@ -1783,29 +1857,32 @@ User A wants to send ৳500 to User B
 1. User A initiates send money request
    ↓
 2. System validates:
-   - Sufficient balance
-   - Daily/monthly limits not exceeded
-   - Recipient exists and is active
+   - Sender is ACTIVE and wallet is ACTIVE
+   - Recipient exists by email or phone
+   - Recipient is ACTIVE and wallet is ACTIVE
+   - Sender ≠ Recipient
    ↓
-3. System calculates fee (৳5)
+3. System calculates fee (configurable, default ৳5)
    Total deduction: ৳505
    ↓
-4. User A enters transaction PIN
+4. System validates:
+   - Sufficient balance (৳505)
+   - Daily limit not exceeded (default ৳50,000)
+   - Monthly limit not exceeded (default ৳200,000)
    ↓
-5. System verifies PIN
-   ↓
-6. System begins database transaction:
+5. System begins database transaction:
    a. Debit ৳505 from User A wallet
    b. Credit ৳500 to User B wallet
-   c. Create transaction record
-   d. Create ledger entries (double-entry)
-   e. Update settlement account (+৳5 fee)
+   c. Create transaction record (type: SEND_MONEY, status: PENDING → PROCESSING → COMPLETED)
+   d. Create ledger entries (double-entry):
+      - DEBIT entry for sender (৳505)
+      - CREDIT entry for receiver (৳500)
+   e. Platform wallet receives ৳5 fee
+   f. Update sender's daily spending
    ↓
-7. System commits transaction
+6. System commits transaction
    ↓
-8. System sends notifications to both users
-   ↓
-9. Transaction complete
+7. Transaction complete
 ```
 
 **API Endpoint**: `POST /api/transactions/send-money`
@@ -1816,12 +1893,18 @@ User A wants to send ৳500 to User B
 
 ```json
 {
-  "recipientId": "recipient-uuid",
+  "recipientIdentifier": "user@example.com",
   "amount": 500.0,
   "description": "Payment for services",
-  "transactionPin": "123456"
+  "pin": "1234"
 }
 ```
+
+**Validation Rules**:
+- Recipient Identifier: Email or phone number (BD format: +8801XXXXXXXXX)
+- Amount: ৳10 - ৳25,000 per transaction
+- Description: Optional, max 200 characters
+- PIN: Optional, 4 digits
 
 **Response**:
 
@@ -1844,115 +1927,48 @@ User A wants to send ৳500 to User B
 }
 ```
 
-**Implementation**:
+**Business Logic**:
 
-```typescript
-async function sendMoney(
-  senderId: string,
-  recipientId: string,
-  amount: number,
-  pin: string
-): Promise<Transaction> {
-  // Start database transaction
-  return await sequelize.transaction(async (t) => {
-    // 1. Validate PIN
-    await verifyTransactionPIN(senderId, pin);
+1. Authenticate sender and validate sender is ACTIVE
+2. Find recipient by email or phone number
+3. Validate recipient exists and is ACTIVE
+4. Ensure sender and recipient are different users
+5. Get sender and recipient wallets
+6. Validate both wallets are ACTIVE
+7. Get send money fee from system config (default: ৳5.00)
+8. Calculate total amount (amount + fee)
+9. Validate sender has sufficient balance
+10. Validate daily spending limit (default: ৳50,000)
+11. Validate monthly spending limit (default: ৳200,000)
+12. Create transaction record (status: PENDING initially)
+13. Update sender wallet:
+    - Deduct total amount (amount + fee)
+    - Increment daily spending
+14. Create sender ledger entry (DEBIT)
+15. Update recipient wallet:
+    - Credit amount (not including fee)
+16. Create recipient ledger entry (CREDIT)
+17. Update transaction status to COMPLETED
+18. Return transaction details
 
-    // 2. Get sender and recipient wallets
-    const senderWallet = await Wallet.findOne({
-      where: { userId: senderId },
-      lock: t.LOCK.UPDATE,
-      transaction: t,
-    });
+**Fee Structure**:
+- Send Money Fee: ৳5.00 (flat fee, configurable via system config)
+- Fee goes to platform wallet
+- Recipient receives full amount (sender pays the fee)
 
-    const recipientWallet = await Wallet.findOne({
-      where: { userId: recipientId },
-      lock: t.LOCK.UPDATE,
-      transaction: t,
-    });
-
-    // 3. Validate balances and limits
-    const fee = await getTransactionFee("SEND_MONEY");
-    const totalAmount = amount + fee;
-
-    if (senderWallet.availableBalance < totalAmount) {
-      throw new Error("Insufficient balance");
-    }
-
-    await checkTransactionLimits(senderId, amount);
-
-    // 4. Create transaction record
-    const transaction = await Transaction.create(
-      {
-        transactionId: generateTransactionId(),
-        type: "SEND_MONEY",
-        senderId,
-        receiverId: recipientId,
-        senderWalletId: senderWallet.id,
-        receiverWalletId: recipientWallet.id,
-        amount,
-        fee,
-        totalAmount,
-        status: "PROCESSING",
-      },
-      { transaction: t }
-    );
-
-    // 5. Update wallet balances
-    senderWallet.balance -= totalAmount;
-    senderWallet.availableBalance -= totalAmount;
-    await senderWallet.save({ transaction: t });
-
-    recipientWallet.balance += amount;
-    recipientWallet.availableBalance += amount;
-    await recipientWallet.save({ transaction: t });
-
-    // 6. Create ledger entries (double-entry)
-    await Ledger.bulkCreate(
-      [
-        {
-          transactionId: transaction.id,
-          walletId: senderWallet.id,
-          entryType: "DEBIT",
-          amount: totalAmount,
-          balanceBefore: senderWallet.balance + totalAmount,
-          balanceAfter: senderWallet.balance,
-          description: `Send money to ${recipientId}`,
-        },
-        {
-          transactionId: transaction.id,
-          walletId: recipientWallet.id,
-          entryType: "CREDIT",
-          amount: amount,
-          balanceBefore: recipientWallet.balance - amount,
-          balanceAfter: recipientWallet.balance,
-          description: `Received money from ${senderId}`,
-        },
-      ],
-      { transaction: t }
-    );
-
-    // 7. Update settlement account (collect fee)
-    await updateSettlementAccount("FEE_COLLECTION", fee, "CREDIT", t);
-
-    // 8. Update transaction status
-    transaction.status = "COMPLETED";
-    transaction.completedAt = new Date();
-    await transaction.save({ transaction: t });
-
-    // 9. Update daily/monthly spending
-    await updateSpendingLimits(senderId, amount);
-
-    return transaction;
-  });
-}
+**Daily/Monthly Limits** (per user):
+- Daily Limit: ৳50,000
+- Monthly Limit: ৳200,000
+- Limits tracked via wallet spending fields
 ```
 
-### 8.5 Add Money (Mock Debit Card)
+### 8.5 Add Money (Debit/Credit Card)
 
 #### 8.5.1 Add Money Flow
 
 **API Endpoint**: `POST /api/transactions/add-money`
+
+**Headers**: `Authorization: Bearer <token>`
 
 **Request Body**:
 
@@ -1960,12 +1976,20 @@ async function sendMoney(
 {
   "amount": 1000.0,
   "cardNumber": "4111111111111111",
-  "expiryMonth": "12",
-  "expiryYear": "2026",
   "cvv": "123",
-  "cardHolderName": "John Doe"
+  "expiryMonth": "12",
+  "expiryYear": "28",
+  "cardHolderName": "Ahmed Hassan"
 }
 ```
+
+**Validation Rules**:
+- Amount: ৳50 - ৳25,000 per transaction
+- Card Number: 16 digits
+- CVV: 3 digits
+- Expiry Month: 01-12
+- Expiry Year: YY format (must not be expired)
+- Card Holder Name: Min 3 characters
 
 **Response**:
 
@@ -1974,35 +1998,76 @@ async function sendMoney(
   "success": true,
   "message": "Money added successfully",
   "data": {
-    "transactionId": "TRX20251228002",
-    "amount": 1000.0,
-    "fee": 0.0,
-    "newBalance": 6250.5,
-    "timestamp": "2025-12-28T11:00:00Z"
+    "transaction": {
+      "transactionId": "TRX20251228002",
+      "amount": 1000.0,
+      "fee": 0.0,
+      "status": "COMPLETED"
+    },
+    "card": {
+      "cardType": "VISA",
+      "cardNumber": "****-****-****-1111",
+      "cardHolder": "Ahmed Hassan",
+      "bankName": "Sonali Bank"
+    },
+    "bankAccount": {
+      "oldBalance": 125000.0,
+      "newBalance": 124000.0
+    },
+    "wallet": {
+      "balance": 6250.5,
+      "availableBalance": 6250.5
+    }
   }
 }
 ```
 
-**Mock Card Validation**:
+**Business Logic**:
 
-```typescript
-function validateMockCard(cardDetails: CardDetails): boolean {
-    "340000000000009", // Amex
-  ];
+1. Validate user authentication and status (must be ACTIVE)
+2. Validate card details:
+   - Check card number format (16 digits)
+   - Validate CVV (3 digits)
+   - Check expiry date (must not be expired)
+   - Check amount limits (৳50 - ৳25,000)
+3. **Card Verification** (via simulation):
+   - Find card in bank accounts simulation
+   - Verify CVV matches
+   - Validate expiry date matches
+   - Check card/account is ACTIVE
+   - Verify sufficient balance in linked bank account
+4. **Deduct from Bank Account** (simulation):
+   - Debit amount from bank account linked to card
+   - Update bank account JSON file
+   - Get transaction details (old/new balance)
+5. **Credit to UIU Cash Wallet**:
+   - Update user wallet balance
+   - Create transaction record (type: ADD_MONEY, status: COMPLETED)
+   - Create ledger entry (CREDIT to user wallet)
+6. Return transaction details with card and bank info
 
-  // Basic validation
-  if (!luhnCheck(cardDetails.cardNumber)) {
-    return false;
-  }
+**Card to Bank Account Mapping**:
+- Each bank account has a linked debit/credit card
+- Card details stored in bank account simulation
+- Card number uniquely identifies the bank account
+- CVV and expiry validation before processing
 
-  // Check expiry
-  const expiry = new Date(cardDetails.expiryYear, cardDetails.expiryMonth - 1);
-  if (expiry < new Date()) {
-    return false;
-  }
+**Bank Account Simulation**:
+- Located in `/simulation/bank_accounts/`
+- 20 dummy bank accounts with linked cards
+- JSON file-based persistence
+- Supports card verification, balance checks, deductions
+- Test cards include VISA and MASTERCARD types
 
-  return true;
-}
+**Error Scenarios**:
+- Card not found in simulation
+- Invalid CVV
+- Card expired
+- Insufficient balance in linked bank account
+- Bank account inactive
+- User account not active
+
+**Note**: No fees are charged for adding money to wallet. The amount debited from bank equals amount credited to wallet.
 ```
 
 ### 8.6 Cash Out via Agents

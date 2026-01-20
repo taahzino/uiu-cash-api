@@ -8,10 +8,16 @@
       "branch_name": "Motijheel Branch",
       "account_type": "SAVINGS",
       "balance": 125000,
-      "pin": "1234",
       "routing_number": "200260111",
       "status": "ACTIVE",
-      "created_at": "2024-01-15T10:30:00Z"
+      "created_at": "2024-01-15T10:30:00Z",
+      "card": {
+        "card_number": "4111111111111111",
+        "card_holder_name": "Ahmed Hassan",
+        "card_expiry": "12/28",
+        "card_cvv": "123",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00002",
@@ -21,10 +27,16 @@
       "branch_name": "Dhanmondi Branch",
       "account_type": "CURRENT",
       "balance": 440000,
-      "pin": "5678",
       "routing_number": "090270369",
       "status": "ACTIVE",
-      "created_at": "2024-02-10T14:20:00Z"
+      "created_at": "2024-02-10T14:20:00Z",
+      "card": {
+        "card_number": "5500000000000004",
+        "card_holder_name": "Fatima Rahman",
+        "card_expiry": "06/29",
+        "card_cvv": "456",
+        "card_type": "MASTERCARD"
+      }
     },
     {
       "id": "BNK00003",
@@ -34,10 +46,16 @@
       "branch_name": "Gulshan Branch",
       "account_type": "SAVINGS",
       "balance": 89500,
-      "pin": "9012",
       "routing_number": "060270781",
       "status": "ACTIVE",
-      "created_at": "2024-03-05T09:15:00Z"
+      "created_at": "2024-03-05T09:15:00Z",
+      "card": {
+        "card_number": "4222222222222220",
+        "card_holder_name": "Mohammad Ali",
+        "card_expiry": "09/27",
+        "card_cvv": "789",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00004",
@@ -47,10 +65,16 @@
       "branch_name": "Banani Branch",
       "account_type": "SAVINGS",
       "balance": 215000,
-      "pin": "3456",
       "routing_number": "095270094",
       "status": "ACTIVE",
-      "created_at": "2024-01-20T11:45:00Z"
+      "created_at": "2024-01-20T11:45:00Z",
+      "card": {
+        "card_number": "5105105105105100",
+        "card_holder_name": "Nusrat Jahan",
+        "card_expiry": "03/30",
+        "card_cvv": "234",
+        "card_type": "MASTERCARD"
+      }
     },
     {
       "id": "BNK00005",
@@ -60,10 +84,16 @@
       "branch_name": "Mirpur Branch",
       "account_type": "CURRENT",
       "balance": 567000,
-      "pin": "7890",
       "routing_number": "125260470",
       "status": "ACTIVE",
-      "created_at": "2024-02-28T08:30:00Z"
+      "created_at": "2024-02-28T08:30:00Z",
+      "card": {
+        "card_number": "4012888888881881",
+        "card_holder_name": "Kamal Hossain",
+        "card_expiry": "11/28",
+        "card_cvv": "567",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00006",
@@ -73,10 +103,16 @@
       "branch_name": "Uttara Branch",
       "account_type": "SAVINGS",
       "balance": 78500,
-      "pin": "2345",
       "routing_number": "225260101",
       "status": "ACTIVE",
-      "created_at": "2024-03-12T16:00:00Z"
+      "created_at": "2024-03-12T16:00:00Z",
+      "card": {
+        "card_number": "5555555555554444",
+        "card_holder_name": "Sabrina Khan",
+        "card_expiry": "08/29",
+        "card_cvv": "890",
+        "card_type": "MASTERCARD"
+      }
     },
     {
       "id": "BNK00007",
@@ -86,10 +122,16 @@
       "branch_name": "Kawran Bazar Branch",
       "account_type": "SAVINGS",
       "balance": 340000,
-      "pin": "6789",
       "routing_number": "070270001",
       "status": "ACTIVE",
-      "created_at": "2024-01-08T12:20:00Z"
+      "created_at": "2024-01-08T12:20:00Z",
+      "card": {
+        "card_number": "4917484589897107",
+        "card_holder_name": "Rahim Uddin",
+        "card_expiry": "05/28",
+        "card_cvv": "321",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00008",
@@ -99,10 +141,16 @@
       "branch_name": "Gulshan-1 Branch",
       "account_type": "CURRENT",
       "balance": 892000,
-      "pin": "0123",
       "routing_number": "200261501",
       "status": "ACTIVE",
-      "created_at": "2024-02-15T10:50:00Z"
+      "created_at": "2024-02-15T10:50:00Z",
+      "card": {
+        "card_number": "5425233430109903",
+        "card_holder_name": "Ayesha Siddique",
+        "card_expiry": "10/27",
+        "card_cvv": "654",
+        "card_type": "MASTERCARD"
+      }
     },
     {
       "id": "BNK00009",
@@ -112,10 +160,16 @@
       "branch_name": "Motijheel Branch",
       "account_type": "SAVINGS",
       "balance": 156000,
-      "pin": "4567",
       "routing_number": "020261801",
       "status": "ACTIVE",
-      "created_at": "2024-03-01T15:30:00Z"
+      "created_at": "2024-03-01T15:30:00Z",
+      "card": {
+        "card_number": "4532015112830366",
+        "card_holder_name": "Tanvir Ahmed",
+        "card_expiry": "07/30",
+        "card_cvv": "987",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00010",
@@ -125,10 +179,16 @@
       "branch_name": "Mohakhali Branch",
       "account_type": "SAVINGS",
       "balance": 234500,
-      "pin": "8901",
       "routing_number": "135260201",
       "status": "ACTIVE",
-      "created_at": "2024-01-25T13:10:00Z"
+      "created_at": "2024-01-25T13:10:00Z",
+      "card": {
+        "card_number": "5425233430109911",
+        "card_holder_name": "Sultana Begum",
+        "card_expiry": "04/29",
+        "card_cvv": "246",
+        "card_type": "MASTERCARD"
+      }
     },
     {
       "id": "BNK00011",
@@ -138,10 +198,16 @@
       "branch_name": "Tejgaon Branch",
       "account_type": "CURRENT",
       "balance": 678000,
-      "pin": "1357",
       "routing_number": "080270011",
       "status": "ACTIVE",
-      "created_at": "2024-02-05T09:40:00Z"
+      "created_at": "2024-02-05T09:40:00Z",
+      "card": {
+        "card_number": "4024007103939509",
+        "card_holder_name": "Jahangir Alam",
+        "card_expiry": "02/28",
+        "card_cvv": "135",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00012",
@@ -151,10 +217,16 @@
       "branch_name": "Badda Branch",
       "account_type": "SAVINGS",
       "balance": 45000,
-      "pin": "2468",
       "routing_number": "155260403",
       "status": "ACTIVE",
-      "created_at": "2024-03-18T14:55:00Z"
+      "created_at": "2024-03-18T14:55:00Z",
+      "card": {
+        "card_number": "5200828282828210",
+        "card_holder_name": "Nasrin Akter",
+        "card_expiry": "01/30",
+        "card_cvv": "468",
+        "card_type": "MASTERCARD"
+      }
     },
     {
       "id": "BNK00013",
@@ -164,10 +236,16 @@
       "branch_name": "Shantinagar Branch",
       "account_type": "SAVINGS",
       "balance": 189000,
-      "pin": "1122",
       "routing_number": "285260121",
       "status": "ACTIVE",
-      "created_at": "2024-01-30T11:25:00Z"
+      "created_at": "2024-01-30T11:25:00Z",
+      "card": {
+        "card_number": "4539578763621486",
+        "card_holder_name": "Ibrahim Khalil",
+        "card_expiry": "06/28",
+        "card_cvv": "112",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00014",
@@ -177,10 +255,16 @@
       "branch_name": "Farmgate Branch",
       "account_type": "CURRENT",
       "balance": 523000,
-      "pin": "9988",
       "routing_number": "175260241",
       "status": "ACTIVE",
-      "created_at": "2024-02-20T08:15:00Z"
+      "created_at": "2024-02-20T08:15:00Z",
+      "card": {
+        "card_number": "5105105105105108",
+        "card_holder_name": "Rashida Khatun",
+        "card_expiry": "09/29",
+        "card_cvv": "998",
+        "card_type": "MASTERCARD"
+      }
     },
     {
       "id": "BNK00015",
@@ -190,10 +274,16 @@
       "branch_name": "Panthapath Branch",
       "account_type": "SAVINGS",
       "balance": 312000,
-      "pin": "5566",
       "routing_number": "145260271",
       "status": "ACTIVE",
-      "created_at": "2024-03-08T12:40:00Z"
+      "created_at": "2024-03-08T12:40:00Z",
+      "card": {
+        "card_number": "4556737586899855",
+        "card_holder_name": "Mizanur Rahman",
+        "card_expiry": "12/27",
+        "card_cvv": "556",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00016",
@@ -203,10 +293,16 @@
       "branch_name": "Elephant Road Branch",
       "account_type": "SAVINGS",
       "balance": 97500,
-      "pin": "3344",
       "routing_number": "210260321",
       "status": "ACTIVE",
-      "created_at": "2024-01-12T16:20:00Z"
+      "created_at": "2024-01-12T16:20:00Z",
+      "card": {
+        "card_number": "5425233430109929",
+        "card_holder_name": "Dilara Hossain",
+        "card_expiry": "05/29",
+        "card_cvv": "334",
+        "card_type": "MASTERCARD"
+      }
     },
     {
       "id": "BNK00017",
@@ -216,10 +312,16 @@
       "branch_name": "Rampura Branch",
       "account_type": "CURRENT",
       "balance": 745000,
-      "pin": "6677",
       "routing_number": "270260011",
       "status": "ACTIVE",
-      "created_at": "2024-02-25T10:05:00Z"
+      "created_at": "2024-02-25T10:05:00Z",
+      "card": {
+        "card_number": "4485275742308327",
+        "card_holder_name": "Rafiqul Islam",
+        "card_expiry": "11/30",
+        "card_cvv": "667",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00018",
@@ -229,10 +331,16 @@
       "branch_name": "Kalabagan Branch",
       "account_type": "SAVINGS",
       "balance": 128000,
-      "pin": "7788",
       "routing_number": "165260121",
       "status": "ACTIVE",
-      "created_at": "2024-03-15T13:50:00Z"
+      "created_at": "2024-03-15T13:50:00Z",
+      "card": {
+        "card_number": "5506900490000436",
+        "card_holder_name": "Sadia Afrin",
+        "card_expiry": "03/28",
+        "card_cvv": "778",
+        "card_type": "MASTERCARD"
+      }
     },
     {
       "id": "BNK00019",
@@ -242,10 +350,16 @@
       "branch_name": "Karwan Bazar Branch",
       "account_type": "SAVINGS",
       "balance": 267000,
-      "pin": "8899",
       "routing_number": "295260141",
       "status": "ACTIVE",
-      "created_at": "2024-01-22T09:30:00Z"
+      "created_at": "2024-01-22T09:30:00Z",
+      "card": {
+        "card_number": "4916338506082832",
+        "card_holder_name": "Habibur Rahman",
+        "card_expiry": "08/28",
+        "card_cvv": "889",
+        "card_type": "VISA"
+      }
     },
     {
       "id": "BNK00020",
@@ -255,10 +369,16 @@
       "branch_name": "Dhanmondi Branch",
       "account_type": "CURRENT",
       "balance": 456000,
-      "pin": "4455",
       "routing_number": "100260361",
       "status": "ACTIVE",
-      "created_at": "2024-02-18T15:15:00Z"
+      "created_at": "2024-02-18T15:15:00Z",
+      "card": {
+        "card_number": "5425233430109937",
+        "card_holder_name": "Shamima Nasrin",
+        "card_expiry": "10/29",
+        "card_cvv": "445",
+        "card_type": "MASTERCARD"
+      }
     }
   ]
 }

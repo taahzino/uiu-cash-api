@@ -30,6 +30,17 @@ function saveBankAccounts(data) {
 }
 
 /**
+ * Find bank account by card number
+ * @param {string} cardNumber - 16-digit card number
+ * @returns {object|null} Bank account or null
+ */
+function findByCardNumber(cardNumber) {
+  const data = loadBankAccounts();
+  const account = data.bank_accounts.find(acc => acc.card && acc.card.card_number === cardNumber);
+  return account || null;
+}
+
+/**
  * Find bank account by account number
  * @param {string} accountNumber - 16-digit account number
  * @returns {object|null} Bank account or null
@@ -52,7 +63,87 @@ function findById(id) {
 }
 
 /**
- * Verify bank account credentials
+ * Verify card credentials
+ * @param {string} cardNumber - 16-digit card number
+ * @param {string} cvv - 3-digit CVV
+ * @param {string} expiryMonth - 2-digit month (01-12)
+ * @param {string} expiryYear - 2-digit year (YY format)
+ * @returns {object} Verification result with success status and message
+ */
+function verifyCard(cardNumber, cvv, expiryMonth, expiryYear) {
+  const account = findByCardNumber(cardNumber);
+  
+  if (!account) {
+    return {
+      success: false,
+      message: 'Card not found',
+      account: null
+    };
+  }
+
+  if (account.status !== 'ACTIVE') {
+    return {
+      success: false,
+      message: 'Account associated with this card is not active',
+      account: null
+    };
+  }
+
+  if (account.card.card_cvv !== cvv) {
+    return {
+      success: false,
+      message: 'Invalid CVV',
+      account: null
+    };
+  }
+
+  // Validate card expiry
+  const cardExpiry = account.card.card_expiry.split('/'); // Format: MM/YY
+  const cardMonth = cardExpiry[0];
+  const cardYear = cardExpiry[1];
+
+  if (expiryMonth !== cardMonth || expiryYear !== cardYear) {
+    return {
+      success: false,
+      message: 'Invalid card expiry date',
+      account: null
+    };
+  }
+
+  // Check if card has expired
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear() % 100; // Get last 2 digits
+  const currentMonth = currentDate.getMonth() + 1; // 1-12
+  const expYear = parseInt(cardYear);
+  const expMonth = parseInt(cardMonth);
+
+  if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+    return {
+      success: false,
+      message: 'Card has expired',
+      account: null
+    };
+  }
+
+  return {
+    success: true,
+    message: 'Card verified successfully',
+    account: {
+      id: account.id,
+      account_number: account.account_number,
+      account_holder_name: account.account_holder_name,
+      bank_name: account.bank_name,
+      branch_name: account.branch_name,
+      account_type: account.account_type,
+      balance: account.balance,
+      card_type: account.card.card_type,
+      card_last_4: cardNumber.slice(-4)
+    }
+  };
+}
+
+/**
+ * Verify bank account credentials (legacy - for backwards compatibility)
  * @param {string} accountNumber - 16-digit account number
  * @param {string} pin - 4-digit PIN
  * @returns {object} Verification result with success status and message
@@ -135,7 +226,76 @@ function checkBalance(accountNumber, amount) {
 }
 
 /**
- * Deduct amount from bank account (for ADD_MONEY transactions)
+ * Deduct amount from bank account via card (for ADD_MONEY transactions)
+ * @param {string} cardNumber - 16-digit card number
+ * @param {string} cvv - 3-digit CVV
+ * @param {string} expiryMonth - 2-digit month
+ * @param {string} expiryYear - 2-digit year
+ * @param {number} amount - Amount to deduct
+ * @returns {object} Transaction result
+ */
+function deductFromAccountByCard(cardNumber, cvv, expiryMonth, expiryYear, amount) {
+  // Verify card first
+  const verification = verifyCard(cardNumber, cvv, expiryMonth, expiryYear);
+  if (!verification.success) {
+    return verification;
+  }
+
+  // Load data and find account by card number
+  const data = loadBankAccounts();
+  const accountIndex = data.bank_accounts.findIndex(acc => acc.card && acc.card.card_number === cardNumber);
+  
+  if (accountIndex === -1) {
+    return {
+      success: false,
+      message: 'Account not found during deduction'
+    };
+  }
+
+  // Check balance
+  const account = data.bank_accounts[accountIndex];
+  if (account.balance < amount) {
+    return {
+      success: false,
+      message: 'Insufficient balance',
+      available_balance: account.balance,
+      required_amount: amount,
+      shortfall: amount - account.balance
+    };
+  }
+
+  // Deduct amount
+  const oldBalance = data.bank_accounts[accountIndex].balance;
+  data.bank_accounts[accountIndex].balance -= amount;
+  const newBalance = data.bank_accounts[accountIndex].balance;
+
+  // Save updated data
+  const saved = saveBankAccounts(data);
+  if (!saved) {
+    return {
+      success: false,
+      message: 'Failed to save transaction'
+    };
+  }
+
+  return {
+    success: true,
+    message: 'Amount deducted successfully',
+    transaction: {
+      card_number: cardNumber,
+      card_last_4: cardNumber.slice(-4),
+      card_type: account.card.card_type,
+      account_holder_name: account.account_holder_name,
+      bank_name: account.bank_name,
+      amount_deducted: amount,
+      old_balance: oldBalance,
+      new_balance: newBalance
+    }
+  };
+}
+
+/**
+ * Deduct amount from bank account (legacy - for backwards compatibility)
  * @param {string} accountNumber - 16-digit account number
  * @param {string} pin - 4-digit PIN
  * @param {number} amount - Amount to deduct
@@ -317,10 +477,13 @@ function isValidPin(pin) {
 }
 
 module.exports = {
+  findByCardNumber,
   findByAccountNumber,
   findById,
+  verifyCard,
   verifyAccount,
   checkBalance,
+  deductFromAccountByCard,
   deductFromAccount,
   addToAccount,
   getAllAccounts,

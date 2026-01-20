@@ -52,10 +52,11 @@ function hasSufficientBalance(amount) {
  * Deduct amount from platform wallet (for bonuses, commissions, etc.)
  * @param {number} amount - Amount to deduct
  * @param {string} reason - Reason for deduction
+ * @param {Object} transactionData - Optional data to record in database
  * @returns {Object} Updated wallet with new balance
  * @throws {Error} If insufficient balance
  */
-function deductBalance(amount, reason = 'Platform Operation') {
+async function deductBalance(amount, reason = 'Platform Operation', transactionData = null) {
   const data = loadData();
   const wallet = data.platform_wallet;
   const amountNum = parseFloat(amount);
@@ -70,8 +71,11 @@ function deductBalance(amount, reason = 'Platform Operation') {
     throw new Error(`Insufficient platform balance. Required: ${amountNum}, Available: ${currentBalance}`);
   }
 
+  const oldBalance = currentBalance;
+  const newBalance = (currentBalance - amountNum).toFixed(2);
+
   // Update balance and tracking
-  wallet.balance = (currentBalance - amountNum).toFixed(2);
+  wallet.balance = newBalance;
   wallet.last_transaction_at = new Date().toISOString();
 
   // Track specific deduction types
@@ -84,9 +88,33 @@ function deductBalance(amount, reason = 'Platform Operation') {
   data.platform_wallet = wallet;
   saveData(data);
 
+  // Record transaction in database if data provided
+  if (transactionData) {
+    try {
+      const { PlatformWalletTransactions, PlatformTransactionType, PlatformEntryType } = require('../models/PlatformWalletTransactions.model');
+      
+      await PlatformWalletTransactions.createTransaction({
+        transaction_type: transactionData.transaction_type || PlatformTransactionType.EXPENSE_OTHER,
+        entry_type: PlatformEntryType.DEBIT,
+        amount: amountNum,
+        balance_before: oldBalance,
+        balance_after: parseFloat(newBalance),
+        related_transaction_id: transactionData.related_transaction_id || null,
+        related_user_id: transactionData.related_user_id || null,
+        related_agent_id: transactionData.related_agent_id || null,
+        description: reason,
+        metadata: transactionData.metadata || null,
+      });
+    } catch (error) {
+      console.error('Failed to record platform wallet debit transaction:', error.message);
+      // Don't throw - balance update succeeded, just log the error
+    }
+  }
+
   return {
     success: true,
-    balance: wallet.balance,
+    balance: newBalance,
+    old_balance: oldBalance.toFixed(2),
     amount_deducted: amountNum.toFixed(2),
     reason: reason
   };
@@ -96,9 +124,10 @@ function deductBalance(amount, reason = 'Platform Operation') {
  * Credit amount to platform wallet (for fees, revenue, etc.)
  * @param {number} amount - Amount to credit
  * @param {string} reason - Reason for credit
+ * @param {Object} transactionData - Optional data to record in database
  * @returns {Object} Updated wallet with new balance
  */
-function creditBalance(amount, reason = 'Platform Revenue') {
+async function creditBalance(amount, reason = 'Platform Revenue', transactionData = null) {
   const data = loadData();
   const wallet = data.platform_wallet;
   const amountNum = parseFloat(amount);
@@ -108,9 +137,11 @@ function creditBalance(amount, reason = 'Platform Revenue') {
   }
 
   const currentBalance = parseFloat(wallet.balance);
+  const oldBalance = currentBalance;
+  const newBalance = (currentBalance + amountNum).toFixed(2);
 
   // Update balance and tracking
-  wallet.balance = (currentBalance + amountNum).toFixed(2);
+  wallet.balance = newBalance;
   wallet.last_transaction_at = new Date().toISOString();
 
   // Track revenue
@@ -121,9 +152,33 @@ function creditBalance(amount, reason = 'Platform Revenue') {
   data.platform_wallet = wallet;
   saveData(data);
 
+  // Record transaction in database if data provided
+  if (transactionData) {
+    try {
+      const { PlatformWalletTransactions, PlatformTransactionType, PlatformEntryType } = require('../models/PlatformWalletTransactions.model');
+      
+      await PlatformWalletTransactions.createTransaction({
+        transaction_type: transactionData.transaction_type || PlatformTransactionType.REVENUE_OTHER,
+        entry_type: PlatformEntryType.CREDIT,
+        amount: amountNum,
+        balance_before: oldBalance,
+        balance_after: parseFloat(newBalance),
+        related_transaction_id: transactionData.related_transaction_id || null,
+        related_user_id: transactionData.related_user_id || null,
+        related_agent_id: transactionData.related_agent_id || null,
+        description: reason,
+        metadata: transactionData.metadata || null,
+      });
+    } catch (error) {
+      console.error('Failed to record platform wallet credit transaction:', error.message);
+      // Don't throw - balance update succeeded, just log the error
+    }
+  }
+
   return {
     success: true,
-    balance: wallet.balance,
+    balance: newBalance,
+    old_balance: oldBalance.toFixed(2),
     amount_credited: amountNum.toFixed(2),
     reason: reason
   };

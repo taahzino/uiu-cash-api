@@ -2,9 +2,11 @@ import express, { NextFunction, Request, Response, Router } from "express";
 import _globals from "../config/_globals";
 import adminAuthRouter from "./admin.auth.router";
 import userAuthRouter from "./user.auth.router";
+import agentAuthRouter from "./agent.auth.router";
 import userManagementRouter from "./user.management.router";
 import systemConfigRouter from "./system.config.router";
 import analyticsRouter from "./analytics.router";
+import transactionRouter from "./transaction.router";
 
 const appRouter = Router();
 
@@ -17,6 +19,12 @@ appRouter.get("/", (req: Request, res: Response) => {
 
 // User authentication routes
 appRouter.use("/api/auth", userAuthRouter);
+
+// Agent authentication routes
+appRouter.use("/api/agents/auth", agentAuthRouter);
+
+// Transaction routes
+appRouter.use("/api/transactions", transactionRouter);
 
 // System configuration routes
 appRouter.use("/api/config", systemConfigRouter);

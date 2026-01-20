@@ -151,20 +151,31 @@ export class TransactionsModel extends BaseModel {
   async findByUserId(
     userId: string,
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
+    conditions?: any
   ): Promise<ITransaction[]> {
+    let whereClause = "(sender_id = ? OR receiver_id = ?)";
+    const params: any[] = [userId, userId];
+
+    // Add optional filters
+    if (conditions?.type) {
+      whereClause += " AND type = ?";
+      params.push(conditions.type);
+    }
+    if (conditions?.status) {
+      whereClause += " AND status = ?";
+      params.push(conditions.status);
+    }
+
     const sql = `
       SELECT * FROM ${this.tableName}
-      WHERE (sender_id = ? OR receiver_id = ?)
+      WHERE ${whereClause}
       ORDER BY created_at DESC
       LIMIT ? OFFSET ?
     `;
-    const results = await this.executeQuery(sql, [
-      userId,
-      userId,
-      limit,
-      offset,
-    ]);
+    
+    params.push(limit, offset);
+    const results = await this.executeQuery(sql, params);
     return Array.isArray(results) ? results : [];
   }
 
@@ -229,13 +240,26 @@ export class TransactionsModel extends BaseModel {
     return results[0]?.total || 0;
   }
 
-  async countByUserId(userId: string): Promise<number> {
-    const sql = `
+  async countByUserId(userId: string, conditions?: any): Promise<number> {
+    let sql = `
       SELECT COUNT(*) as count
       FROM ${this.tableName}
       WHERE (sender_id = ? OR receiver_id = ?)
     `;
-    const results = await this.executeQuery(sql, [userId, userId]);
+    const params: any[] = [userId, userId];
+
+    if (conditions) {
+      if (conditions.type) {
+        sql += ` AND type = ?`;
+        params.push(conditions.type);
+      }
+      if (conditions.status) {
+        sql += ` AND status = ?`;
+        params.push(conditions.status);
+      }
+    }
+
+    const results = await this.executeQuery(sql, params);
     return results[0]?.count || 0;
   }
 

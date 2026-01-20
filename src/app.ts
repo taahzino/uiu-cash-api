@@ -29,8 +29,8 @@ app.use("/", appRouter);
 
 // Initialize database and start the server
 initializeDatabase().then(() => {
-  app.listen(3000, () => {
-    logger.info("Server is running on port 3000");
+  app.listen(process.env.PORT, () => {
+    logger.info(`Server is running on port ${process.env.PORT}`);
     logger.info(`MODE: ${process.env.MODE}`);
 
     _globals?.FOLDERS?.forEach((DIR) => {

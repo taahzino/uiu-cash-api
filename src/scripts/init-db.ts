@@ -64,16 +64,39 @@ async function initializeDatabase() {
     logger.info("All tables created successfully!");
 
     // Initialize default system configuration
+    logger.info("Setting up default system configurations...");
+    
     const commissionRateConfig = await SystemConfig.findByKey("agent_commission_rate");
     if (!commissionRateConfig) {
-      logger.info("Creating default agent commission rate config...");
       await SystemConfig.createConfig({
         config_key: "agent_commission_rate",
         config_value: "1.50",
         description: "Global commission rate percentage for all agents (e.g., 1.50 for 1.5%)",
       });
-      logger.info("Default commission rate set to 1.50%");
+      logger.info("✓ Agent commission rate set to 1.50%");
     }
+
+    const sendMoneyFeeConfig = await SystemConfig.findByKey("send_money_fee");
+    if (!sendMoneyFeeConfig) {
+      await SystemConfig.createConfig({
+        config_key: "send_money_fee",
+        config_value: "5.00",
+        description: "Fixed fee for send money (P2P) transactions in BDT",
+      });
+      logger.info("✓ Send money fee set to ৳5.00");
+    }
+
+    const onboardingBonusConfig = await SystemConfig.findByKey("onboarding_bonus");
+    if (!onboardingBonusConfig) {
+      await SystemConfig.createConfig({
+        config_key: "onboarding_bonus",
+        config_value: "50.00",
+        description: "Onboarding bonus amount for new PERSONAL users in BDT",
+      });
+      logger.info("✓ Onboarding bonus set to ৳50.00");
+    }
+
+    logger.info("System configurations initialized!");
 
     // Check if default admin exists
     const existingAdmin = await Admins.findByEmail("admin@uiucash.com");

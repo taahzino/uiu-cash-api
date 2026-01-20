@@ -690,7 +690,112 @@ agent_min_float = 1000.00 (Minimum float for agents)
 
 ---
 
-### 14. Platform Wallet (Simulation)
+### 14. `platform_wallet_transactions` - Platform Wallet Transaction Tracking
+
+**Purpose**: Tracks all platform wallet financial activities for admin dashboard statistics and auditing.
+
+| Column                    | Data Type     | Constraints                 | Description                                                   |
+| ------------------------- | ------------- | --------------------------- | ------------------------------------------------------------- |
+| `id`                      | INT           | PRIMARY KEY, AUTO_INCREMENT | Unique platform transaction identifier                        |
+| `transaction_type`        | ENUM          | NOT NULL                    | Type of platform transaction                                  |
+| `entry_type`              | ENUM          | NOT NULL                    | CREDIT (money in) or DEBIT (money out)                        |
+| `amount`                  | DECIMAL(15,2) | NOT NULL, CHECK > 0         | Transaction amount                                            |
+| `balance_before`          | DECIMAL(15,2) | NOT NULL                    | Platform wallet balance before transaction                    |
+| `balance_after`           | DECIMAL(15,2) | NOT NULL                    | Platform wallet balance after transaction                     |
+| `related_transaction_id`  | CHAR(36)      | FOREIGN KEY, NULLABLE       | Reference to related user transaction (if applicable)         |
+| `related_user_id`         | CHAR(36)      | FOREIGN KEY, NULLABLE       | Related user ID (if applicable)                               |
+| `related_agent_id`        | CHAR(36)      | FOREIGN KEY, NULLABLE       | Related agent ID (if applicable)                              |
+| `description`             | TEXT          | NOT NULL                    | Transaction description                                       |
+| `metadata`                | JSON          | NULLABLE                    | Additional metadata                                           |
+| `created_at`              | TIMESTAMP     | DEFAULT CURRENT_TIMESTAMP   | Transaction timestamp                                         |
+
+**Transaction Types**:
+
+- `FEE_COLLECTED`: Transaction fees (send money, cash out, etc.)
+- `COMMISSION_PAID`: Agent commissions
+- `BONUS_GIVEN`: User bonuses/cashback
+- `CASHBACK_GIVEN`: Promotional cashback
+- `REVENUE_OTHER`: Other platform revenue
+- `EXPENSE_OTHER`: Other platform expenses
+- `SETTLEMENT`: Settlement operations
+- `ADJUSTMENT`: Manual adjustments
+
+**Entry Types**:
+
+- `CREDIT`: Money coming into platform wallet (fees, revenue)
+- `DEBIT`: Money going out of platform wallet (commissions, bonuses)
+
+**Relationships**:
+
+- `related_transaction_id` → `transactions(id)`
+- `related_user_id` → `users(id)`
+- `related_agent_id` → `agents(id)`
+
+**Indexes**:
+
+- PRIMARY: `id`
+- INDEX: `idx_platform_txn_type` (transaction_type)
+- INDEX: `idx_platform_entry_type` (entry_type)
+- INDEX: `idx_platform_related_txn` (related_transaction_id)
+- INDEX: `idx_platform_user` (related_user_id)
+- INDEX: `idx_platform_agent` (related_agent_id)
+- INDEX: `idx_platform_date` (created_at)
+- INDEX: `idx_platform_type_date` (transaction_type, created_at)
+
+**Business Rules**:
+
+- Every platform wallet balance change must be recorded
+- Immutable records - no updates or deletes
+- Used for admin dashboard statistics
+- Supports double-entry accounting for platform finances
+- Balance tracking synchronized with `simulation/platform_wallet/data.json`
+- Fees collected from users are credited to platform wallet
+- Commissions paid to agents are debited from platform wallet
+- Bonuses given to users are debited from platform wallet
+
+**SQL Schema**:
+
+```sql
+CREATE TABLE platform_wallet_transactions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    transaction_type ENUM(
+        'FEE_COLLECTED', 
+        'COMMISSION_PAID', 
+        'BONUS_GIVEN', 
+        'CASHBACK_GIVEN', 
+        'REVENUE_OTHER', 
+        'EXPENSE_OTHER', 
+        'SETTLEMENT', 
+        'ADJUSTMENT'
+    ) NOT NULL,
+    entry_type ENUM('CREDIT', 'DEBIT') NOT NULL,
+    amount DECIMAL(15,2) NOT NULL CHECK (amount > 0),
+    balance_before DECIMAL(15,2) NOT NULL,
+    balance_after DECIMAL(15,2) NOT NULL,
+    related_transaction_id CHAR(36),
+    related_user_id CHAR(36),
+    related_agent_id CHAR(36),
+    description TEXT NOT NULL,
+    metadata JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (related_transaction_id) REFERENCES transactions(id),
+    FOREIGN KEY (related_user_id) REFERENCES users(id),
+    FOREIGN KEY (related_agent_id) REFERENCES agents(id),
+    
+    INDEX idx_platform_txn_type (transaction_type),
+    INDEX idx_platform_entry_type (entry_type),
+    INDEX idx_platform_related_txn (related_transaction_id),
+    INDEX idx_platform_user (related_user_id),
+    INDEX idx_platform_agent (related_agent_id),
+    INDEX idx_platform_date (created_at),
+    INDEX idx_platform_type_date (transaction_type, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+---
+
+### 15. Platform Wallet (Simulation)
 
 **Purpose**: Manages platform finances including bonuses, commissions, and revenue collection.
 
@@ -718,6 +823,7 @@ agent_min_float = 1000.00 (Minimum float for agents)
 **Operations**:
 - Deduct: Onboarding bonuses (৳50), agent commissions
 - Credit: Transaction fees, cash out fees (platform share), bank transfer fees
+- All platform wallet operations are automatically recorded to `platform_wallet_transactions` table
 - Check: Balance validation before operations
 - Track: Revenue, bonuses, commissions separately
 

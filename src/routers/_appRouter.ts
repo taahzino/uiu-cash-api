@@ -5,11 +5,12 @@ import adminRouter from "./_adminRouter";
 import systemConfigRouter from "./system.config.router";
 import transactionRouter from "./transaction.router";
 import walletRouter from "./wallet.router";
+import bankTransferRouter from "./bank.transfer.router";
 
 const appRouter = Router();
 
 appRouter.use("/", (req: Request, res: Response, next: NextFunction) => {
-  console.log([req.method, req.originalUrl, req.body]);
+  console.log([req.method, req.originalUrl, req.body, req.query]);
   next();
 });
 
@@ -31,6 +32,9 @@ appRouter.use("/api/transactions", transactionRouter);
 
 // Wallet routes
 appRouter.use("/api/wallet", walletRouter);
+
+// Bank transfer routes
+appRouter.use("/api/bank", bankTransferRouter);
 
 // System configuration routes
 appRouter.use("/api/config", systemConfigRouter);

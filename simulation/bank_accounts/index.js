@@ -76,7 +76,7 @@ function verifyCard(cardNumber, cvv, expiryMonth, expiryYear) {
   if (!account) {
     return {
       success: false,
-      message: 'Card not found',
+      message: 'Invalid card details',
       account: null
     };
   }

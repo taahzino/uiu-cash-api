@@ -58,6 +58,13 @@ export const agentRegister = async (req: Request, res: Response) => {
     // Generate public key for JWT validation
     const public_key = uuidv4();
 
+    // Convert date from DD-MM-YYYY to YYYY-MM-DD for MySQL DATE type
+    let formattedDateOfBirth: string | null = null;
+    if (dateOfBirth) {
+      const [day, month, year] = dateOfBirth.split("-");
+      formattedDateOfBirth = `${year}-${month}-${day}`;
+    }
+
     // Create user with AGENT role (status PENDING - awaiting admin approval)
     const newUser = await Users.createUser({
       email,
@@ -67,7 +74,7 @@ export const agentRegister = async (req: Request, res: Response) => {
       first_name: firstName,
       last_name: lastName,
       role: UserRole.AGENT,
-      date_of_birth: dateOfBirth || null,
+      date_of_birth: formattedDateOfBirth,
       nid_number: nidNumber || null,
       status: UserStatus.PENDING, // Agents need admin approval
     });
@@ -401,7 +408,11 @@ export const updateAgentProfile = async (req: Request, res: Response) => {
     const userUpdates: any = {};
     if (firstName) userUpdates.first_name = firstName;
     if (lastName) userUpdates.last_name = lastName;
-    if (dateOfBirth) userUpdates.date_of_birth = dateOfBirth;
+    if (dateOfBirth) {
+      // Convert date from DD-MM-YYYY to YYYY-MM-DD
+      const [day, month, year] = dateOfBirth.split("-");
+      userUpdates.date_of_birth = `${year}-${month}-${day}`;
+    }
 
     if (Object.keys(userUpdates).length > 0) {
       await Users.updateById(userId, userUpdates);

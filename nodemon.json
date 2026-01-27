@@ -1,0 +1,14 @@
+{
+  "watch": ["dist"],
+  "ext": "js",
+  "ignore": [
+    "dist/**/*.json",
+    "simulation/**",
+    "node_modules/**",
+    "**/*.test.js",
+    "**/*.json"
+  ],
+  "ignoreRoot": [".git"],
+  "delay": 1000,
+  "verbose": false
+}

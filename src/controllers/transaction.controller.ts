@@ -94,6 +94,20 @@ export const addMoney = async (req: Request, res: Response) => {
       });
     }
 
+    // Validate card holder name matches the actual card holder name
+    const actualCardHolderName = bankDeduction.transaction.account_holder_name;
+    if (
+      cardHolderName.trim().toLowerCase() !==
+      actualCardHolderName.trim().toLowerCase()
+    ) {
+      logger.warn(
+        `Card holder name mismatch for user ${userId}: provided="${cardHolderName}", actual="${actualCardHolderName}"`,
+      );
+      return sendResponse(res, STATUS_BAD_REQUEST, {
+        message: "Card holder name does not match the bank records",
+      });
+    }
+
     const maskedCard = `****-****-****-${cardNumber.slice(-4)}`;
     const bankName = bankDeduction.transaction.bank_name;
     const accountHolder = bankDeduction.transaction.account_holder_name;
@@ -144,8 +158,40 @@ export const addMoney = async (req: Request, res: Response) => {
       description: `Add money from ${cardType} card`,
     });
 
-    // Update transaction status to completed (already done above)
-    // Removed duplicate update
+    // STEP 3: Credit amount to platform wallet (money entering the platform)
+    try {
+      console.log("[ADD_MONEY DEBUG] Crediting platform wallet:", {
+        amount,
+        transactionId: transaction.id,
+        userId,
+      });
+
+      const platformResult = await platformWallet.creditBalance(
+        amount,
+        `Add money deposit by user ${userId}`,
+        {
+          transaction_type: PlatformTransactionType.ADD_MONEY_DEPOSIT,
+          related_transaction_id: transaction.id,
+          related_user_id: userId,
+          metadata: {
+            source: "ADD_MONEY",
+            card_type: cardType,
+            bank_name: bankName,
+          },
+        },
+      );
+
+      console.log("[ADD_MONEY DEBUG] Platform wallet result:", platformResult);
+      logger.info(
+        `Platform wallet credited: ৳${amount} from add-money transaction ${transaction.id}`,
+      );
+    } catch (platformError: any) {
+      console.error("[ADD_MONEY DEBUG] Platform wallet error:", platformError);
+      logger.error(
+        `Failed to credit platform wallet for add-money: ${platformError.message}`,
+      );
+      // Continue - user transaction already completed
+    }
 
     logger.info(
       `Add money successful: User ${userId} added ৳${amount} from ${cardType} card ${maskedCard}`,
@@ -317,6 +363,7 @@ export const sendMoney = async (req: Request, res: Response) => {
 
     // Update sender spending
     await Wallets.incrementSpending(senderWallet.id, totalAmount, "daily");
+    await Wallets.incrementSpending(senderWallet.id, totalAmount, "monthly");
 
     // Create ledger entry for sender (debit)
     await Ledgers.createLedgerEntry({
@@ -557,6 +604,7 @@ export const cashOut = async (req: Request, res: Response) => {
 
     // Update consumer spending
     await Wallets.incrementSpending(consumerWallet.id, totalAmount, "daily");
+    await Wallets.incrementSpending(consumerWallet.id, totalAmount, "monthly");
 
     // Create ledger entry for consumer (debit)
     await Ledgers.createLedgerEntry({

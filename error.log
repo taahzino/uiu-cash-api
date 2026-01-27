@@ -1,2 +1,15 @@
 {"level":"error","message":"Database initialization failed: Unknown column 'deleted_at' in 'where clause'","service":"user-service","timestamp":"2026-01-13T16:22:26.354Z"}
 {"level":"error","message":"Update user profile error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ', updated_at = CURRENT_TIMESTAMP WHERE id = ?' at line 1","service":"user-service","timestamp":"2026-01-27T14:06:38.951Z"}
+{"level":"error","message":"Get wallet info error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:37:54.940Z"}
+{"level":"error","message":"Get wallet info error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:37:55.210Z"}
+{"level":"error","message":"Get wallet info error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:38:19.574Z"}
+{"level":"error","message":"Get wallet info error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:39:25.212Z"}
+{"level":"error","message":"Get wallet info error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:42:17.350Z"}
+{"level":"error","message":"Get wallet info error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:42:28.533Z"}
+{"level":"error","message":"Get transaction history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:42:59.845Z"}
+{"level":"error","message":"Get transaction history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:43:00.173Z"}
+{"level":"error","message":"Get transaction history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:43:07.719Z"}
+{"level":"error","message":"Get transaction history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:43:07.763Z"}
+{"level":"error","message":"Get wallet info error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:43:17.571Z"}
+{"level":"error","message":"Get wallet info error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T16:43:17.815Z"}
+{"level":"error","message":"User registration error: Incorrect date value: '04-01-2008' for column 'date_of_birth' at row 1","service":"user-service","timestamp":"2026-01-27T16:59:31.331Z"}

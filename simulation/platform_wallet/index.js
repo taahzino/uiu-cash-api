@@ -1,14 +1,14 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const DATA_FILE = path.join(__dirname, 'data.json');
+const DATA_FILE = path.join(__dirname, "data.json");
 
 /**
  * Load platform wallet data from JSON file
  * @returns {Object} Platform wallet object
  */
 function loadData() {
-  const data = fs.readFileSync(DATA_FILE, 'utf8');
+  const data = fs.readFileSync(DATA_FILE, "utf8");
   return JSON.parse(data);
 }
 
@@ -17,7 +17,7 @@ function loadData() {
  * @param {Object} data - Platform wallet object
  */
 function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
 }
 
 /**
@@ -56,19 +56,25 @@ function hasSufficientBalance(amount) {
  * @returns {Object} Updated wallet with new balance
  * @throws {Error} If insufficient balance
  */
-async function deductBalance(amount, reason = 'Platform Operation', transactionData = null) {
+async function deductBalance(
+  amount,
+  reason = "Platform Operation",
+  transactionData = null,
+) {
   const data = loadData();
   const wallet = data.platform_wallet;
   const amountNum = parseFloat(amount);
 
   if (amountNum <= 0) {
-    throw new Error('Amount must be greater than 0');
+    throw new Error("Amount must be greater than 0");
   }
 
   const currentBalance = parseFloat(wallet.balance);
-  
+
   if (currentBalance < amountNum) {
-    throw new Error(`Insufficient platform balance. Required: ${amountNum}, Available: ${currentBalance}`);
+    throw new Error(
+      `Insufficient platform balance. Required: ${amountNum}, Available: ${currentBalance}`,
+    );
   }
 
   const oldBalance = currentBalance;
@@ -79,10 +85,14 @@ async function deductBalance(amount, reason = 'Platform Operation', transactionD
   wallet.last_transaction_at = new Date().toISOString();
 
   // Track specific deduction types
-  if (reason.toLowerCase().includes('bonus')) {
-    wallet.total_bonuses_given = (parseFloat(wallet.total_bonuses_given) + amountNum).toFixed(2);
-  } else if (reason.toLowerCase().includes('commission')) {
-    wallet.total_commissions_paid = (parseFloat(wallet.total_commissions_paid) + amountNum).toFixed(2);
+  if (reason.toLowerCase().includes("bonus")) {
+    wallet.total_bonuses_given = (
+      parseFloat(wallet.total_bonuses_given) + amountNum
+    ).toFixed(2);
+  } else if (reason.toLowerCase().includes("commission")) {
+    wallet.total_commissions_paid = (
+      parseFloat(wallet.total_commissions_paid) + amountNum
+    ).toFixed(2);
   }
 
   data.platform_wallet = wallet;
@@ -91,10 +101,23 @@ async function deductBalance(amount, reason = 'Platform Operation', transactionD
   // Record transaction in database if data provided
   if (transactionData) {
     try {
-      const { PlatformWalletTransactions, PlatformTransactionType, PlatformEntryType } = require('../models/PlatformWalletTransactions.model');
-      
-      await PlatformWalletTransactions.createTransaction({
-        transaction_type: transactionData.transaction_type || PlatformTransactionType.EXPENSE_OTHER,
+      console.log("[PLATFORM WALLET] Recording debit transaction:", {
+        transaction_type: transactionData.transaction_type,
+        amount: amountNum,
+        related_transaction_id: transactionData.related_transaction_id,
+        related_user_id: transactionData.related_user_id,
+      });
+
+      const {
+        PlatformWalletTransactions,
+        PlatformTransactionType,
+        PlatformEntryType,
+      } = require("../../dist/models/PlatformWalletTransactions.model");
+
+      const txnRecord = await PlatformWalletTransactions.createTransaction({
+        transaction_type:
+          transactionData.transaction_type ||
+          PlatformTransactionType.EXPENSE_OTHER,
         entry_type: PlatformEntryType.DEBIT,
         amount: amountNum,
         balance_before: oldBalance,
@@ -105,8 +128,18 @@ async function deductBalance(amount, reason = 'Platform Operation', transactionD
         description: reason,
         metadata: transactionData.metadata || null,
       });
+
+      console.log(
+        "[PLATFORM WALLET] Transaction recorded successfully:",
+        txnRecord?.id,
+      );
     } catch (error) {
-      console.error('Failed to record platform wallet debit transaction:', error.message);
+      console.error(
+        "[PLATFORM WALLET] Failed to record platform wallet debit transaction:",
+        error,
+      );
+      console.error("[PLATFORM WALLET] Error details:", error.message);
+      console.error("[PLATFORM WALLET] Error stack:", error.stack);
       // Don't throw - balance update succeeded, just log the error
     }
   }
@@ -116,7 +149,7 @@ async function deductBalance(amount, reason = 'Platform Operation', transactionD
     balance: newBalance,
     old_balance: oldBalance.toFixed(2),
     amount_deducted: amountNum.toFixed(2),
-    reason: reason
+    reason: reason,
   };
 }
 
@@ -127,13 +160,17 @@ async function deductBalance(amount, reason = 'Platform Operation', transactionD
  * @param {Object} transactionData - Optional data to record in database
  * @returns {Object} Updated wallet with new balance
  */
-async function creditBalance(amount, reason = 'Platform Revenue', transactionData = null) {
+async function creditBalance(
+  amount,
+  reason = "Platform Revenue",
+  transactionData = null,
+) {
   const data = loadData();
   const wallet = data.platform_wallet;
   const amountNum = parseFloat(amount);
 
   if (amountNum <= 0) {
-    throw new Error('Amount must be greater than 0');
+    throw new Error("Amount must be greater than 0");
   }
 
   const currentBalance = parseFloat(wallet.balance);
@@ -145,8 +182,13 @@ async function creditBalance(amount, reason = 'Platform Revenue', transactionDat
   wallet.last_transaction_at = new Date().toISOString();
 
   // Track revenue
-  if (reason.toLowerCase().includes('fee') || reason.toLowerCase().includes('revenue')) {
-    wallet.total_revenue_collected = (parseFloat(wallet.total_revenue_collected) + amountNum).toFixed(2);
+  if (
+    reason.toLowerCase().includes("fee") ||
+    reason.toLowerCase().includes("revenue")
+  ) {
+    wallet.total_revenue_collected = (
+      parseFloat(wallet.total_revenue_collected) + amountNum
+    ).toFixed(2);
   }
 
   data.platform_wallet = wallet;
@@ -155,10 +197,23 @@ async function creditBalance(amount, reason = 'Platform Revenue', transactionDat
   // Record transaction in database if data provided
   if (transactionData) {
     try {
-      const { PlatformWalletTransactions, PlatformTransactionType, PlatformEntryType } = require('../models/PlatformWalletTransactions.model');
-      
-      await PlatformWalletTransactions.createTransaction({
-        transaction_type: transactionData.transaction_type || PlatformTransactionType.REVENUE_OTHER,
+      console.log("[PLATFORM WALLET] Recording credit transaction:", {
+        transaction_type: transactionData.transaction_type,
+        amount: amountNum,
+        related_transaction_id: transactionData.related_transaction_id,
+        related_user_id: transactionData.related_user_id,
+      });
+
+      const {
+        PlatformWalletTransactions,
+        PlatformTransactionType,
+        PlatformEntryType,
+      } = require("../../dist/models/PlatformWalletTransactions.model");
+
+      const txnRecord = await PlatformWalletTransactions.createTransaction({
+        transaction_type:
+          transactionData.transaction_type ||
+          PlatformTransactionType.REVENUE_OTHER,
         entry_type: PlatformEntryType.CREDIT,
         amount: amountNum,
         balance_before: oldBalance,
@@ -169,8 +224,18 @@ async function creditBalance(amount, reason = 'Platform Revenue', transactionDat
         description: reason,
         metadata: transactionData.metadata || null,
       });
+
+      console.log(
+        "[PLATFORM WALLET] Transaction recorded successfully:",
+        txnRecord?.id,
+      );
     } catch (error) {
-      console.error('Failed to record platform wallet credit transaction:', error.message);
+      console.error(
+        "[PLATFORM WALLET] Failed to record platform wallet credit transaction:",
+        error,
+      );
+      console.error("[PLATFORM WALLET] Error details:", error.message);
+      console.error("[PLATFORM WALLET] Error stack:", error.stack);
       // Don't throw - balance update succeeded, just log the error
     }
   }
@@ -180,7 +245,7 @@ async function creditBalance(amount, reason = 'Platform Revenue', transactionDat
     balance: newBalance,
     old_balance: oldBalance.toFixed(2),
     amount_credited: amountNum.toFixed(2),
-    reason: reason
+    reason: reason,
   };
 }
 
@@ -190,17 +255,18 @@ async function creditBalance(amount, reason = 'Platform Revenue', transactionDat
  */
 function getStatistics() {
   const wallet = getPlatformWallet();
-  
+
   return {
     current_balance: parseFloat(wallet.balance),
     total_revenue_collected: parseFloat(wallet.total_revenue_collected),
     total_bonuses_given: parseFloat(wallet.total_bonuses_given),
     total_commissions_paid: parseFloat(wallet.total_commissions_paid),
-    net_profit: parseFloat(wallet.total_revenue_collected) - 
-                parseFloat(wallet.total_bonuses_given) - 
-                parseFloat(wallet.total_commissions_paid),
+    net_profit:
+      parseFloat(wallet.total_revenue_collected) -
+      parseFloat(wallet.total_bonuses_given) -
+      parseFloat(wallet.total_commissions_paid),
     status: wallet.status,
-    last_transaction_at: wallet.last_transaction_at
+    last_transaction_at: wallet.last_transaction_at,
   };
 }
 
@@ -223,8 +289,8 @@ function resetWallet(initialBalance = 1000000) {
 
   return {
     success: true,
-    message: 'Platform wallet reset successfully',
-    balance: wallet.balance
+    message: "Platform wallet reset successfully",
+    balance: wallet.balance,
   };
 }
 
@@ -235,5 +301,5 @@ module.exports = {
   deductBalance,
   creditBalance,
   getStatistics,
-  resetWallet
+  resetWallet,
 };

@@ -17,6 +17,7 @@ import {
 export const getWalletInfo = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
+    console.log("[WALLET DEBUG] User ID:", userId);
 
     if (!userId) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
@@ -25,15 +26,35 @@ export const getWalletInfo = async (req: Request, res: Response) => {
     }
 
     // Get wallet
+    console.log("[WALLET DEBUG] Fetching wallet for userId:", userId);
     const wallet = await Wallets.findByUserId(userId);
+    console.log("[WALLET DEBUG] Wallet found:", wallet ? "Yes" : "No");
+
     if (!wallet) {
       return sendResponse(res, STATUS_NOT_FOUND, {
         message: "Wallet not found",
       });
     }
 
-    // Get last 5 transactions
-    const recentTransactions = await Transactions.findByUserId(userId, 5, 0);
+    // Get last 5 transactions (limit: 5, offset: 0)
+    console.log("[WALLET DEBUG] Fetching transactions with params:", {
+      userId,
+      limit: 5,
+      offset: 0,
+      conditions: undefined,
+    });
+
+    const recentTransactions = await Transactions.findByUserId(
+      userId,
+      5,
+      0,
+      undefined,
+    );
+
+    console.log(
+      "[WALLET DEBUG] Transactions fetched, count:",
+      recentTransactions?.length || 0,
+    );
 
     return sendResponse(res, STATUS_OK, {
       message: "Wallet information retrieved successfully",
@@ -57,6 +78,8 @@ export const getWalletInfo = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
+    console.error("[WALLET DEBUG] Error caught:", error);
+    console.error("[WALLET DEBUG] Error stack:", error.stack);
     logger.error("Get wallet info error: " + error.message);
     return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
       message: "An error occurred while fetching wallet information",

@@ -58,8 +58,44 @@ export const identifierSchema = z.string().min(1, "Email or phone is required");
 
 /**
  * Date of birth schema
+ * Format: DD-MM-YYYY
+ * Must be at least 18 years old
  */
-export const dateOfBirthSchema = z.string().optional();
+export const dateOfBirthSchema = z
+  .string()
+  .min(1, "Date of birth is required")
+  .regex(
+    /^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-\d{4}$/,
+    "Date of birth must be in DD-MM-YYYY format",
+  )
+  .refine((dateStr) => {
+    // Parse DD-MM-YYYY format
+    const [day, month, year] = dateStr.split("-").map(Number);
+    const birthDate = new Date(year, month - 1, day);
+
+    // Check if date is valid
+    if (
+      birthDate.getDate() !== day ||
+      birthDate.getMonth() !== month - 1 ||
+      birthDate.getFullYear() !== year
+    ) {
+      return false;
+    }
+
+    // Calculate age
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+
+    return age >= 18;
+  }, "You must be at least 18 years old");
 
 /**
  * NID number schema

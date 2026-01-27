@@ -1,0 +1,371 @@
+import { Request, Response } from "express";
+import path from "path";
+import logger from "../config/_logger";
+import {
+  BankTransfers,
+  BankTransferStatus,
+} from "../models/BankTransfers.model";
+import {
+  Transactions,
+  TransactionType,
+  TransactionStatus,
+} from "../models/Transactions.model";
+import { Wallets } from "../models/Wallets.model";
+import { Ledgers, EntryType } from "../models/Ledgers.model";
+import { SystemConfig } from "../models/SystemConfig.model";
+import {
+  sendResponse,
+  STATUS_BAD_REQUEST,
+  STATUS_INTERNAL_SERVER_ERROR,
+  STATUS_NOT_FOUND,
+  STATUS_OK,
+  STATUS_UNAUTHORIZED,
+  STATUS_CREATED,
+} from "../utilities/response";
+
+// Import platform wallet simulation
+const platformWallet = require(
+  path.join(__dirname, "../../simulation/platform_wallet"),
+);
+
+/**
+ * Calculate bank transfer fee
+ * Fee: 1.5% of amount with minimum ৳10
+ */
+const calculateTransferFee = async (amount: number): Promise<number> => {
+  try {
+    const feePercentageConfig = await SystemConfig.findByKey(
+      "bank_transfer_fee_percentage",
+    );
+    const minFeeConfig = await SystemConfig.findByKey("bank_transfer_min_fee");
+
+    const feePercentage = feePercentageConfig
+      ? parseFloat(feePercentageConfig.config_value)
+      : 1.5;
+
+    const minFee = minFeeConfig ? parseFloat(minFeeConfig.config_value) : 10.0;
+
+    const calculatedFee = (amount * feePercentage) / 100;
+    return Math.max(calculatedFee, minFee);
+  } catch (error: any) {
+    logger.warn(
+      `Error fetching bank transfer fee config: ${error.message}. Using defaults.`,
+    );
+    const calculatedFee = (amount * 1.5) / 100;
+    return Math.max(calculatedFee, 10.0);
+  }
+};
+
+/**
+ * Bank Transfer - Initiate Transfer
+ * POST /api/bank/transfer
+ */
+export const initiateTransfer = async (req: Request, res: Response) => {
+  const connection = await Wallets.getConnectionPublic();
+
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "User authentication required",
+      });
+    }
+
+    const {
+      bankName,
+      accountNumber,
+      accountHolderName,
+      routingNumber,
+      transferType,
+      amount,
+      description,
+    } = req.body;
+
+    await connection.beginTransaction();
+
+    // Get user wallet with row lock
+    const wallet = await Wallets.findByUserIdForUpdate(connection, userId);
+    if (!wallet) {
+      await connection.rollback();
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Wallet not found",
+      });
+    }
+
+    // Calculate fee
+    const processingFee = await calculateTransferFee(amount);
+    const totalAmount = amount + processingFee;
+
+    // Check available balance
+    if (wallet.available_balance < totalAmount) {
+      await connection.rollback();
+      return sendResponse(res, STATUS_BAD_REQUEST, {
+        message: "Insufficient balance",
+        data: {
+          required: totalAmount,
+          available: wallet.available_balance,
+          fee: processingFee,
+        },
+      });
+    }
+
+    // Check daily spending limit
+    const newDailySpent =
+      parseFloat(wallet.daily_spent.toString()) + totalAmount;
+    if (newDailySpent > parseFloat(wallet.daily_limit.toString())) {
+      await connection.rollback();
+      return sendResponse(res, STATUS_BAD_REQUEST, {
+        message: "Daily spending limit exceeded",
+        data: {
+          dailyLimit: wallet.daily_limit,
+          currentSpent: wallet.daily_spent,
+          attemptedAmount: totalAmount,
+        },
+      });
+    }
+
+    // Check monthly spending limit
+    const newMonthlySpent =
+      parseFloat(wallet.monthly_spent.toString()) + totalAmount;
+    if (newMonthlySpent > parseFloat(wallet.monthly_limit.toString())) {
+      await connection.rollback();
+      return sendResponse(res, STATUS_BAD_REQUEST, {
+        message: "Monthly spending limit exceeded",
+        data: {
+          monthlyLimit: wallet.monthly_limit,
+          currentSpent: wallet.monthly_spent,
+          attemptedAmount: totalAmount,
+        },
+      });
+    }
+
+    // Create transaction
+    const transaction = await Transactions.createTransaction({
+      type: TransactionType.BANK_TRANSFER,
+      sender_id: userId,
+      sender_wallet_id: wallet.id,
+      amount: amount,
+      fee: processingFee,
+      description: description || `Bank transfer to ${bankName}`,
+      metadata: {
+        bank_name: bankName,
+        account_number: accountNumber,
+        account_holder_name: accountHolderName,
+        routing_number: routingNumber,
+        transfer_type: transferType,
+      },
+    });
+
+    // Create bank transfer record
+    const bankTransfer = await BankTransfers.createBankTransfer({
+      transaction_id: transaction.id,
+      user_id: userId,
+      bank_name: bankName,
+      account_name: accountHolderName,
+      account_number: accountNumber,
+      routing_number: routingNumber || null,
+      amount: amount,
+      fee: processingFee,
+    });
+
+    // Deduct from wallet
+    const newBalance = parseFloat(wallet.balance.toString()) - totalAmount;
+    const newAvailableBalance =
+      parseFloat(wallet.available_balance.toString()) - totalAmount;
+
+    await Wallets.updateBalance(wallet.id, newBalance, newAvailableBalance);
+    await Wallets.updateSpending(wallet.id, newDailySpent, newMonthlySpent);
+
+    // Create ledger entry (DEBIT)
+    await Ledgers.createLedgerEntry({
+      transaction_id: transaction.id,
+      wallet_id: wallet.id,
+      entry_type: EntryType.DEBIT,
+      amount: totalAmount,
+      balance_before: parseFloat(wallet.balance.toString()),
+      balance_after: newBalance,
+      description: `Bank transfer: ৳${amount} (Fee: ৳${processingFee})`,
+    });
+
+    // Credit fee to platform wallet
+    platformWallet.addBalance(
+      processingFee,
+      `Bank transfer fee from user ${userId} - Transaction ${transaction.transaction_id}`,
+    );
+
+    // Update transaction status
+    await Transactions.updateById(transaction.id, {
+      status: TransactionStatus.PROCESSING,
+    });
+
+    // Update bank transfer status
+    await BankTransfers.updateStatus(
+      bankTransfer.id,
+      BankTransferStatus.PROCESSING,
+    );
+
+    // Estimate completion time (INSTANT: 1 hour, STANDARD: 3 days)
+    const estimatedHours = transferType === "INSTANT" ? 1 : 72;
+    const estimatedCompletion = new Date();
+    estimatedCompletion.setHours(
+      estimatedCompletion.getHours() + estimatedHours,
+    );
+
+    await connection.commit();
+
+    logger.info(
+      `Bank transfer initiated: ${transaction.transaction_id} - User: ${userId}, Amount: ৳${amount}, Fee: ৳${processingFee}`,
+    );
+
+    return sendResponse(res, STATUS_CREATED, {
+      message: "Bank transfer initiated successfully",
+      data: {
+        transactionId: transaction.transaction_id,
+        amount: amount,
+        processingFee: processingFee,
+        totalAmount: totalAmount,
+        bankName: bankName,
+        accountNumber: `****${accountNumber.slice(-4)}`,
+        transferType: transferType,
+        status: "PROCESSING",
+        estimatedCompletion: estimatedCompletion.toISOString(),
+      },
+    });
+  } catch (error: any) {
+    await connection.rollback();
+    logger.error("Bank transfer error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred while processing bank transfer",
+    });
+  } finally {
+    connection.release();
+  }
+};
+
+/**
+ * Get Bank Transfer History
+ * GET /api/bank/transfers
+ */
+export const getTransferHistory = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "User authentication required",
+      });
+    }
+
+    const { page = 1, limit = 10, status } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+
+    let transfers = await BankTransfers.findByUserId(
+      userId,
+      Number(limit),
+      offset,
+    );
+
+    // Filter by status if provided
+    if (status) {
+      transfers = transfers.filter((t) => t.status === status);
+    }
+
+    const total = await BankTransfers.countByUserId(userId);
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Bank transfer history retrieved successfully",
+      data: {
+        transfers: transfers.map((transfer: any) => ({
+          id: transfer.id,
+          transactionId: transfer.transaction_id,
+          bankName: transfer.bank_name,
+          accountNumber: `****${transfer.account_number.slice(-4)}`,
+          accountHolderName: transfer.account_name,
+          amount: transfer.amount,
+          fee: transfer.fee,
+          totalAmount: parseFloat(transfer.amount) + parseFloat(transfer.fee),
+          status: transfer.status,
+          referenceNumber: transfer.reference_number,
+          createdAt: transfer.created_at,
+          updatedAt: transfer.updated_at,
+        })),
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total: total,
+          totalPages: Math.ceil(total / Number(limit)),
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error("Get bank transfer history error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred while fetching transfer history",
+    });
+  }
+};
+
+/**
+ * Get Bank Transfer Details
+ * GET /api/bank/transfers/:id
+ */
+export const getTransferDetails = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "User authentication required",
+      });
+    }
+
+    const { id } = req.params;
+
+    const transfer = await BankTransfers.findById(id);
+    if (!transfer) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Bank transfer not found",
+      });
+    }
+
+    // Verify ownership
+    if (transfer.user_id !== userId) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "Unauthorized access to this transfer",
+      });
+    }
+
+    const transaction = await Transactions.findById(transfer.transaction_id);
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Bank transfer details retrieved successfully",
+      data: {
+        id: transfer.id,
+        transactionId: transfer.transaction_id,
+        bankName: transfer.bank_name,
+        accountNumber: `****${transfer.account_number.slice(-4)}`,
+        accountHolderName: transfer.account_name,
+        routingNumber: transfer.routing_number,
+        amount: transfer.amount,
+        fee: transfer.fee,
+        totalAmount: parseFloat(transfer.amount) + parseFloat(transfer.fee),
+        status: transfer.status,
+        referenceNumber: transfer.reference_number,
+        createdAt: transfer.created_at,
+        updatedAt: transfer.updated_at,
+        transaction: transaction
+          ? {
+              transactionId: transaction.transaction_id,
+              status: transaction.status,
+              description: transaction.description,
+              initiatedAt: transaction.initiated_at,
+              completedAt: transaction.completed_at,
+            }
+          : null,
+      },
+    });
+  } catch (error: any) {
+    logger.error("Get bank transfer details error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred while fetching transfer details",
+    });
+  }
+};

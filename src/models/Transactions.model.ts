@@ -141,7 +141,7 @@ export class TransactionsModel extends BaseModel {
   }
 
   async findByTransactionId(
-    transactionId: string
+    transactionId: string,
   ): Promise<ITransaction | null> {
     const sql = `SELECT * FROM ${this.tableName} WHERE transaction_id = ? LIMIT 1`;
     const results = await this.executeQuery(sql, [transactionId]);
@@ -152,7 +152,7 @@ export class TransactionsModel extends BaseModel {
     userId: string,
     limit: number = 50,
     offset: number = 0,
-    conditions?: any
+    conditions?: any,
   ): Promise<ITransaction[]> {
     let whereClause = "(sender_id = ? OR receiver_id = ?)";
     const params: any[] = [userId, userId];
@@ -167,14 +167,14 @@ export class TransactionsModel extends BaseModel {
       params.push(conditions.status);
     }
 
+    // LIMIT and OFFSET must be integers in the SQL string, not placeholders
     const sql = `
       SELECT * FROM ${this.tableName}
       WHERE ${whereClause}
       ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit.toString())} OFFSET ${parseInt(offset.toString())}
     `;
-    
-    params.push(limit, offset);
+
     const results = await this.executeQuery(sql, params);
     return Array.isArray(results) ? results : [];
   }
@@ -182,7 +182,7 @@ export class TransactionsModel extends BaseModel {
   async updateStatus(
     id: string,
     status: TransactionStatus,
-    failedReason?: string
+    failedReason?: string,
   ): Promise<ITransaction | null> {
     let sql = `UPDATE ${this.tableName} SET status = ?`;
     const params: any[] = [status];
@@ -217,7 +217,7 @@ export class TransactionsModel extends BaseModel {
     userId: string,
     type: TransactionType,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<number> {
     let sql = `
       SELECT COALESCE(SUM(amount), 0) as total
@@ -267,7 +267,9 @@ export class TransactionsModel extends BaseModel {
     return await this.count({ status });
   }
 
-  async getTotalByType(type: TransactionType): Promise<{ count: number; amount: number }> {
+  async getTotalByType(
+    type: TransactionType,
+  ): Promise<{ count: number; amount: number }> {
     const sql = `
       SELECT 
         COUNT(*) as count,
@@ -282,7 +284,7 @@ export class TransactionsModel extends BaseModel {
   async getTransactionTrend(
     startDate?: string,
     endDate?: string,
-    groupBy: string = "day"
+    groupBy: string = "day",
   ): Promise<any[]> {
     const dateFormat = groupBy === "month" ? "%Y-%m" : "%Y-%m-%d";
     let sql = `
@@ -342,10 +344,7 @@ export class TransactionsModel extends BaseModel {
     return results[0]?.total || 0;
   }
 
-  async getRevenueTrend(
-    startDate?: string,
-    endDate?: string
-  ): Promise<any[]> {
+  async getRevenueTrend(startDate?: string, endDate?: string): Promise<any[]> {
     let sql = `
       SELECT 
         DATE(created_at) as date,

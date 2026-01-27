@@ -33,10 +33,10 @@ const platformWallet = require(
 );
 
 /**
- * Consumer Registration Controller
- * POST /api/auth/consumer/register
+ * User Registration Controller
+ * POST /api/auth/user/register
  */
-export const consumerRegister = async (req: Request, res: Response) => {
+export const userRegister = async (req: Request, res: Response) => {
   try {
     const {
       email,
@@ -71,13 +71,6 @@ export const consumerRegister = async (req: Request, res: Response) => {
     // Generate public key for JWT validation
     const public_key = uuidv4();
 
-    // Convert date from DD-MM-YYYY to YYYY-MM-DD for MySQL DATE type
-    let formattedDateOfBirth: string | null = null;
-    if (dateOfBirth) {
-      const [day, month, year] = dateOfBirth.split("-");
-      formattedDateOfBirth = `${year}-${month}-${day}`;
-    }
-
     // Determine user status based on role
     // CONSUMER users are automatically ACTIVE
     // AGENT users need admin approval (PENDING)
@@ -93,7 +86,7 @@ export const consumerRegister = async (req: Request, res: Response) => {
       first_name: firstName,
       last_name: lastName,
       role,
-      date_of_birth: formattedDateOfBirth,
+      date_of_birth: dateOfBirth || null,
       nid_number: nidNumber || null,
       status: userStatus,
     });
@@ -113,38 +106,22 @@ export const consumerRegister = async (req: Request, res: Response) => {
           ? parseFloat(bonusConfig.config_value)
           : 50.0;
 
-        console.log("[BONUS DEBUG] Bonus amount:", bonusAmount);
-        console.log("[BONUS DEBUG] New wallet ID:", newWallet.id);
-        console.log("[BONUS DEBUG] Current wallet balance:", newWallet.balance);
-
         // Check if platform has sufficient balance
         if (platformWallet.hasSufficientBalance(bonusAmount)) {
-          console.log("[BONUS DEBUG] Platform has sufficient balance");
-
           // Deduct from platform wallet
           platformWallet.deductBalance(bonusAmount, "Onboarding Bonus");
-          console.log("[BONUS DEBUG] Deducted from platform wallet");
 
           // Credit to user wallet
           const updatedBalance =
             parseFloat(newWallet.balance.toString()) + bonusAmount;
-          console.log(
-            "[BONUS DEBUG] Calculated updated balance:",
-            updatedBalance,
-          );
-
-          const walletUpdateResult = await Wallets.updateBalance(
+          await Wallets.updateBalance(
             newWallet.id,
             updatedBalance,
             updatedBalance,
           );
-          console.log(
-            "[BONUS DEBUG] Wallet update result:",
-            walletUpdateResult,
-          );
 
           // Create transaction record
-          const newTransaction = await Transactions.createTransaction({
+          await Transactions.createTransaction({
             type: TransactionType.ONBOARDING_BONUS,
             receiver_id: newUser.id,
             receiver_wallet_id: newWallet.id,
@@ -156,26 +133,17 @@ export const consumerRegister = async (req: Request, res: Response) => {
               bonus_type: "onboarding",
             },
           });
-          console.log("[BONUS DEBUG] Transaction created:", newTransaction.id);
 
           // Update transaction status to completed
           const transaction = await Transactions.findOne({
             receiver_id: newUser.id,
             type: TransactionType.ONBOARDING_BONUS,
           });
-          console.log(
-            "[BONUS DEBUG] Transaction found for completion:",
-            transaction?.id,
-          );
-
           if (transaction) {
             await Transactions.updateById(transaction.id, {
               status: TransactionStatus.COMPLETED,
               completed_at: new Date(),
             });
-            console.log(
-              "[BONUS DEBUG] Transaction status updated to COMPLETED",
-            );
           }
 
           bonusGiven = true;
@@ -183,20 +151,18 @@ export const consumerRegister = async (req: Request, res: Response) => {
             `Onboarding bonus of ৳${bonusAmount} given to user ${newUser.id}`,
           );
         } else {
-          console.log("[BONUS DEBUG] Platform wallet has insufficient balance");
           logger.warn(
             `Platform wallet has insufficient balance to give onboarding bonus to user ${newUser.id}`,
           );
         }
       } catch (bonusError: any) {
-        console.error("[BONUS DEBUG] Bonus error:", bonusError);
         logger.error(`Failed to give onboarding bonus: ${bonusError.message}`);
         // Continue registration even if bonus fails
       }
     }
 
     logger.info(
-      `Consumer registered: ${newUser.id} (${email}) - Status: ${userStatus}${bonusGiven ? " - Bonus: ৳50" : ""}`,
+      `User registered: ${newUser.id} (${email}) - Status: ${userStatus}${bonusGiven ? " - Bonus: ৳50" : ""}`,
     );
 
     const message =
@@ -230,10 +196,10 @@ export const consumerRegister = async (req: Request, res: Response) => {
 };
 
 /**
- * Consumer Login Controller
- * POST /api/auth/consumer/login
+ * User Login Controller
+ * POST /api/auth/user/login
  */
-export const consumerLogin = async (req: Request, res: Response) => {
+export const userLogin = async (req: Request, res: Response) => {
   try {
     const { identifier, password } = req.body;
 
@@ -242,13 +208,6 @@ export const consumerLogin = async (req: Request, res: Response) => {
     if (!user) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
         message: "Invalid credentials",
-      });
-    }
-
-    // Verify user is a consumer
-    if (user.role !== UserRole.CONSUMER) {
-      return sendResponse(res, STATUS_FORBIDDEN, {
-        message: "Access denied. Consumer credentials required.",
       });
     }
 
@@ -274,7 +233,7 @@ export const consumerLogin = async (req: Request, res: Response) => {
     }
 
     // Generate token
-    const token = generateToken(user.id, user.public_key, "Consumer");
+    const token = generateToken(user.id, user.email, "Consumer");
 
     // Update login info
     await Users.updateLoginInfo(user.id);
@@ -326,46 +285,10 @@ export const consumerLogin = async (req: Request, res: Response) => {
 };
 
 /**
- * Consumer Logout Controller
- * POST /api/auth/consumer/logout
- * Regenerates the public_key to invalidate all existing tokens
+ * Get Current User Profile
+ * GET /api/auth/user/profile
  */
-export const consumerLogout = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return sendResponse(res, STATUS_UNAUTHORIZED, {
-        message: "User authentication required",
-      });
-    }
-
-    console.log("Logging out user:", userId);
-
-    // Generate new public key to invalidate all existing tokens
-    const new_public_key = uuidv4();
-
-    // Update user's public key
-    await Users.updateUser(userId, { public_key: new_public_key });
-
-    logger.info(`User logged out: ${userId} - All tokens invalidated`);
-
-    return sendResponse(res, STATUS_OK, {
-      message: "Logout successful. All sessions have been terminated.",
-    });
-  } catch (error: any) {
-    logger.error("User logout error: " + error.message);
-    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
-      message: "An error occurred during logout",
-    });
-  }
-};
-
-/**
- * Get Current Consumer Profile
- * GET /api/auth/consumer/profile
- */
-export const getConsumerProfile = async (req: Request, res: Response) => {
+export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
 
@@ -425,10 +348,10 @@ export const getConsumerProfile = async (req: Request, res: Response) => {
 };
 
 /**
- * Update Consumer Profile
- * PUT /api/auth/consumer/profile
+ * Update User Profile
+ * PUT /api/auth/user/profile
  */
-export const updateConsumerProfile = async (req: Request, res: Response) => {
+export const updateUserProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
     const { firstName, lastName, dateOfBirth } = req.body;
@@ -442,11 +365,7 @@ export const updateConsumerProfile = async (req: Request, res: Response) => {
     const updateData: any = {};
     if (firstName) updateData.first_name = firstName;
     if (lastName) updateData.last_name = lastName;
-    if (dateOfBirth) {
-      // Convert date from DD-MM-YYYY to YYYY-MM-DD
-      const [day, month, year] = dateOfBirth.split("-");
-      updateData.date_of_birth = `${year}-${month}-${day}`;
-    }
+    if (dateOfBirth) updateData.date_of_birth = dateOfBirth;
 
     const updatedUser = await Users.updateUser(userId, updateData);
 
@@ -478,7 +397,7 @@ export const updateConsumerProfile = async (req: Request, res: Response) => {
 
 /**
  * Change Password
- * PUT /api/auth/consumer/change-password
+ * PUT /api/auth/user/change-password
  */
 export const changePassword = async (req: Request, res: Response) => {
   try {

@@ -20,7 +20,24 @@ export const addMoneySchema = z.object({
     .regex(/^\d{16}$/, "Card number must be 16 digits"),
   cardHolderName: z
     .string()
-    .min(3, "Cardholder name must be at least 3 characters"),
+    .min(1, "Cardholder name is required")
+    .max(50, "Cardholder name must not exceed 50 characters")
+    .regex(
+      /^[a-zA-Z]+(\s[a-zA-Z]+)+$/,
+      "Cardholder name must contain at least first and last name with only letters and spaces",
+    )
+    .refine((name) => {
+      const trimmed = name.trim();
+      return (
+        trimmed.length >= 3 &&
+        trimmed !== name.toLowerCase() &&
+        trimmed !== name.toUpperCase()
+      );
+    }, "Cardholder name must be at least 3 characters and properly formatted")
+    .refine((name) => {
+      const words = name.trim().split(/\s+/);
+      return words.length >= 2 && words.every((word) => word.length >= 2);
+    }, "Cardholder name must have at least 2 words, each with minimum 2 characters"),
   expiryMonth: z
     .string()
     .min(1, "Expiry month is required")
@@ -33,7 +50,7 @@ export const addMoneySchema = z.object({
       const currentYear = new Date().getFullYear() % 100;
       const expYear = parseInt(year);
       return expYear >= currentYear;
-    }, "Card has expired"),
+    }, "Invalid card details"),
   cvv: z
     .string()
     .min(1, "CVV is required")

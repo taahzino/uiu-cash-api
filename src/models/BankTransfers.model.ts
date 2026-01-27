@@ -67,7 +67,7 @@ export class BankTransfersModel extends BaseModel {
   `;
 
   async createBankTransfer(
-    transferData: ICreateBankTransfer
+    transferData: ICreateBankTransfer,
   ): Promise<IBankTransfer> {
     const id = await generateUniqueId(this);
     const transfer = {
@@ -88,7 +88,7 @@ export class BankTransfersModel extends BaseModel {
   }
 
   async findByTransactionId(
-    transactionId: string
+    transactionId: string,
   ): Promise<IBankTransfer | null> {
     const sql = `SELECT * FROM ${this.tableName} WHERE transaction_id = ? LIMIT 1`;
     const results = await this.executeQuery(sql, [transactionId]);
@@ -98,7 +98,7 @@ export class BankTransfersModel extends BaseModel {
   async findByUserId(
     userId: string,
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
   ): Promise<IBankTransfer[]> {
     const sql = `
       SELECT * FROM ${this.tableName}
@@ -113,7 +113,7 @@ export class BankTransfersModel extends BaseModel {
   async updateStatus(
     id: string,
     status: BankTransferStatus,
-    referenceNumber?: string
+    referenceNumber?: string,
   ): Promise<IBankTransfer | null> {
     const updates: any = { status };
     if (referenceNumber) {
@@ -122,10 +122,16 @@ export class BankTransfersModel extends BaseModel {
     return await this.updateById(id, updates);
   }
 
+  async countByUserId(userId: string): Promise<number> {
+    const sql = `SELECT COUNT(*) as count FROM ${this.tableName} WHERE user_id = ?`;
+    const results = await this.executeQuery(sql, [userId]);
+    return results[0]?.count || 0;
+  }
+
   async getTotalByUser(
     userId: string,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<number> {
     let sql = `
       SELECT COALESCE(SUM(amount), 0) as total

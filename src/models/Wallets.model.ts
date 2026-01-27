@@ -92,25 +92,50 @@ export class WalletsModel extends BaseModel {
     return Array.isArray(results) && results.length > 0 ? results[0] : null;
   }
 
+  /**
+   * Find wallet by user ID with row lock for update (for transactions)
+   */
+  async findByUserIdForUpdate(
+    connection: any,
+    userId: string,
+  ): Promise<IWallet | null> {
+    const sql = `SELECT * FROM ${this.tableName} WHERE user_id = ? FOR UPDATE`;
+    const [results] = await connection.execute(sql, [userId]);
+    return Array.isArray(results) && results.length > 0 ? results[0] : null;
+  }
+
   async updateBalance(
     id: string,
     balance: number,
-    availableBalance: number
+    availableBalance: number,
   ): Promise<IWallet | null> {
     const sql = `
       UPDATE ${this.tableName}
       SET balance = ?,
           available_balance = ?,
           last_transaction_at = CURRENT_TIMESTAMP
+      WHERE id = ?
     `;
     await this.executeQuery(sql, [balance, availableBalance, id]);
     return await this.findById(id);
   }
 
+  /**
+   * Update spending (daily and monthly)
+   */
+  async updateSpending(
+    id: string,
+    dailySpent: number,
+    monthlySpent: number,
+  ): Promise<void> {
+    const sql = `UPDATE ${this.tableName} SET daily_spent = ?, monthly_spent = ? WHERE id = ?`;
+    await this.executeQuery(sql, [dailySpent, monthlySpent, id]);
+  }
+
   async incrementSpending(
     id: string,
     amount: number,
-    period: "daily" | "monthly"
+    period: "daily" | "monthly",
   ): Promise<void> {
     const column = period === "daily" ? "daily_spent" : "monthly_spent";
     const sql = `UPDATE ${this.tableName} SET ${column} = ${column} + ? WHERE id = ?`;
@@ -126,7 +151,7 @@ export class WalletsModel extends BaseModel {
   async checkSpendingLimit(
     id: string,
     amount: number,
-    period: "daily" | "monthly"
+    period: "daily" | "monthly",
   ): Promise<boolean> {
     const wallet = await this.findById(id);
     if (!wallet) return false;

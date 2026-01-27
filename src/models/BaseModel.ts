@@ -22,7 +22,7 @@ export abstract class BaseModel {
         logger.info(`Table '${this.tableName}' already exists`);
       } else {
         logger.error(
-          `Failed to initialize table '${this.tableName}': ${error.message}`
+          `Failed to initialize table '${this.tableName}': ${error.message}`,
         );
         throw error;
       }
@@ -44,6 +44,13 @@ export abstract class BaseModel {
   }
 
   /**
+   * Get a connection for transactions (public method)
+   */
+  async getConnectionPublic(): Promise<mysql.PoolConnection> {
+    return await getConnection();
+  }
+
+  /**
    * Find a record by ID
    */
   async findById(id: string): Promise<any | null> {
@@ -58,7 +65,7 @@ export abstract class BaseModel {
   async findAll(
     conditions?: Record<string, any>,
     limit?: number,
-    offset?: number
+    offset?: number,
   ): Promise<any[]> {
     let sql = `SELECT * FROM ${this.tableName}`;
     const params: any[] = [];
@@ -96,7 +103,7 @@ export abstract class BaseModel {
     const params = Object.values(conditions);
 
     const sql = `SELECT * FROM ${this.tableName} WHERE ${conditionsArray.join(
-      " AND "
+      " AND ",
     )} LIMIT 1`;
     const results = await this.executeQuery(sql, params);
     return Array.isArray(results) && results.length > 0 ? results[0] : null;
@@ -111,7 +118,7 @@ export abstract class BaseModel {
     const placeholders = columns.map(() => "?").join(", ");
 
     const sql = `INSERT INTO ${this.tableName} (${columns.join(
-      ", "
+      ", ",
     )}) VALUES (${placeholders})`;
     const result: any = await this.executeQuery(sql, values);
     return await this.findById(result.insertId || data.id);
@@ -155,7 +162,7 @@ export abstract class BaseModel {
    * Execute a transaction
    */
   async transaction<T>(
-    callback: (connection: mysql.PoolConnection) => Promise<T>
+    callback: (connection: mysql.PoolConnection) => Promise<T>,
   ): Promise<T> {
     const connection = await this.getConnection();
     await connection.beginTransaction();

@@ -2,6 +2,7 @@ import { BaseModel } from "./BaseModel";
 
 // Platform wallet transaction types
 export enum PlatformTransactionType {
+  ADD_MONEY_DEPOSIT = "ADD_MONEY_DEPOSIT", // User deposits from external banks
   FEE_COLLECTED = "FEE_COLLECTED", // Transaction fees (send money, cash out, etc.)
   COMMISSION_PAID = "COMMISSION_PAID", // Agent commissions
   BONUS_GIVEN = "BONUS_GIVEN", // User bonuses/cashback
@@ -49,6 +50,7 @@ export class PlatformWalletTransactionsModel extends BaseModel {
     CREATE TABLE IF NOT EXISTS platform_wallet_transactions (
       id INT PRIMARY KEY AUTO_INCREMENT,
       transaction_type ENUM(
+        'ADD_MONEY_DEPOSIT',
         'FEE_COLLECTED', 
         'COMMISSION_PAID', 
         'BONUS_GIVEN', 
@@ -87,7 +89,7 @@ export class PlatformWalletTransactionsModel extends BaseModel {
    * Create a new platform wallet transaction record
    */
   async createTransaction(
-    data: Omit<PlatformWalletTransaction, "id" | "created_at">
+    data: Omit<PlatformWalletTransaction, "id" | "created_at">,
   ): Promise<PlatformWalletTransaction | null> {
     const sql = `
       INSERT INTO ${this.tableName} 
@@ -116,10 +118,12 @@ export class PlatformWalletTransactionsModel extends BaseModel {
    * Find platform wallet transaction by ID
    * Uses custom method name to avoid conflict with BaseModel
    */
-  async findByPlatformId(id: number): Promise<PlatformWalletTransaction | null> {
+  async findByPlatformId(
+    id: number,
+  ): Promise<PlatformWalletTransaction | null> {
     const sql = `SELECT * FROM ${this.tableName} WHERE id = ?`;
     const results = await this.executeQuery(sql, [id]);
-    
+
     if (!Array.isArray(results) || results.length === 0) return null;
 
     const row = results[0];
@@ -141,7 +145,7 @@ export class PlatformWalletTransactionsModel extends BaseModel {
       entry_type?: PlatformEntryType;
       start_date?: Date;
       end_date?: Date;
-    }
+    },
   ): Promise<{ transactions: PlatformWalletTransaction[]; total: number }> {
     const offset = (page - 1) * limit;
     let whereConditions: string[] = [];
@@ -168,12 +172,17 @@ export class PlatformWalletTransactionsModel extends BaseModel {
     }
 
     const whereClause =
-      whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
     // Get total count
     const countSql = `SELECT COUNT(*) as total FROM ${this.tableName} ${whereClause}`;
     const countResults = await this.executeQuery(countSql, params);
-    const total = Array.isArray(countResults) && countResults.length > 0 ? countResults[0].total : 0;
+    const total =
+      Array.isArray(countResults) && countResults.length > 0
+        ? countResults[0].total
+        : 0;
 
     // Get transactions
     const sql = `
@@ -183,11 +192,7 @@ export class PlatformWalletTransactionsModel extends BaseModel {
       LIMIT ? OFFSET ?
     `;
 
-    const results = await this.executeQuery(sql, [
-      ...params,
-      limit,
-      offset,
-    ]);
+    const results = await this.executeQuery(sql, [...params, limit, offset]);
 
     const rows = Array.isArray(results) ? results : [];
 
@@ -209,7 +214,7 @@ export class PlatformWalletTransactionsModel extends BaseModel {
    */
   async getStatistics(
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<PlatformWalletStatistics> {
     let whereConditions: string[] = [];
     let params: any[] = [];
@@ -225,7 +230,9 @@ export class PlatformWalletTransactionsModel extends BaseModel {
     }
 
     const whereClause =
-      whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
     const sql = `
       SELECT 
@@ -241,7 +248,8 @@ export class PlatformWalletTransactionsModel extends BaseModel {
     `;
 
     const results = await this.executeQuery(sql, params);
-    const stats = Array.isArray(results) && results.length > 0 ? results[0] : {};
+    const stats =
+      Array.isArray(results) && results.length > 0 ? results[0] : {};
 
     // Get current platform balance from simulation
     const platformWallet = require("../../simulation/platform_wallet");
@@ -262,7 +270,7 @@ export class PlatformWalletTransactionsModel extends BaseModel {
    * Get transactions by related transaction ID
    */
   async findByTransactionId(
-    transactionId: number
+    transactionId: number,
   ): Promise<PlatformWalletTransaction[]> {
     const sql = `
       SELECT * FROM ${this.tableName} 
@@ -289,14 +297,17 @@ export class PlatformWalletTransactionsModel extends BaseModel {
   async findByUserId(
     userId: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
   ): Promise<{ transactions: PlatformWalletTransaction[]; total: number }> {
     const offset = (page - 1) * limit;
 
     // Get total count
     const countSql = `SELECT COUNT(*) as total FROM ${this.tableName} WHERE related_user_id = ?`;
     const countResults = await this.executeQuery(countSql, [userId]);
-    const total = Array.isArray(countResults) && countResults.length > 0 ? countResults[0].total : 0;
+    const total =
+      Array.isArray(countResults) && countResults.length > 0
+        ? countResults[0].total
+        : 0;
 
     // Get transactions
     const sql = `
@@ -306,11 +317,7 @@ export class PlatformWalletTransactionsModel extends BaseModel {
       LIMIT ? OFFSET ?
     `;
 
-    const results = await this.executeQuery(sql, [
-      userId,
-      limit,
-      offset,
-    ]);
+    const results = await this.executeQuery(sql, [userId, limit, offset]);
 
     const rows = Array.isArray(results) ? results : [];
 

@@ -12,8 +12,15 @@
    - [User Authentication](#user-authentication)
    - [Agent Authentication](#agent-authentication)
    - [Admin Authentication](#admin-authentication)
-2. [Common Patterns](#common-patterns)
-3. [Error Responses](#error-responses)
+2. [Wallet](#wallet)
+3. [Transactions](#transactions)
+   - [Add Money](#add-money)
+   - [Send Money](#send-money)
+   - [Cash Out](#cash-out)
+   - [Transaction History](#transaction-history)
+   - [Transaction Details](#transaction-details)
+4. [Common Patterns](#common-patterns)
+5. [Error Responses](#error-responses)
 
 ---
 
@@ -889,6 +896,503 @@ Authorization: Bearer <admin_token>
 
 - **401 Unauthorized** - Invalid token or incorrect current password
 - **400 Bad Request** - New password doesn't meet requirements
+
+---
+
+## Wallet
+
+Base URL: `/api/wallet`
+
+### 1. Get Wallet Information
+
+Retrieves wallet information including available balance, spending limits, and last 5 transactions.
+
+**Endpoint:** `GET /api/wallet`  
+**Authentication:** Required (Consumer or Agent Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Wallet information retrieved successfully",
+  "data": {
+    "availableBalance": 5000.0,
+    "dailyLimit": 25000.0,
+    "monthlyLimit": 100000.0,
+    "dailySpent": 1500.0,
+    "monthlySpent": 12000.0,
+    "currency": "BDT",
+    "recentTransactions": [
+      {
+        "id": "T1A2B3C4",
+        "transactionId": "TXN202601271234567",
+        "type": "SEND_MONEY",
+        "amount": 500.0,
+        "fee": 5.0,
+        "status": "COMPLETED",
+        "description": "Payment for lunch",
+        "createdAt": "2026-01-27T12:34:56.000Z"
+      },
+      {
+        "id": "T2B3C4D5",
+        "transactionId": "TXN202601271234568",
+        "type": "ADD_MONEY",
+        "amount": 2000.0,
+        "fee": 0.0,
+        "status": "COMPLETED",
+        "description": "Added money from card",
+        "createdAt": "2026-01-27T10:15:30.000Z"
+      }
+    ]
+  }
+}
+```
+
+**Response Fields:**
+
+| Field              | Type   | Description                                |
+| ------------------ | ------ | ------------------------------------------ |
+| availableBalance   | number | Current spendable balance                  |
+| dailyLimit         | number | Maximum amount that can be spent per day   |
+| monthlyLimit       | number | Maximum amount that can be spent per month |
+| dailySpent         | number | Amount spent today                         |
+| monthlySpent       | number | Amount spent this month                    |
+| currency           | string | Currency code (BDT)                        |
+| recentTransactions | array  | Last 5 transactions                        |
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+- **404 Not Found** - Wallet not found
+
+---
+
+## Transactions
+
+Base URL: `/api/transactions`
+
+### Add Money
+
+Add money to wallet from a debit or credit card.
+
+**Endpoint:** `POST /api/transactions/add-money`  
+**Authentication:** Required (Consumer or Agent Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+
+```json
+{
+  "amount": 2000,
+  "cardNumber": "4532123456789012",
+  "cardHolderName": "John Doe",
+  "expiryMonth": "12",
+  "expiryYear": "28",
+  "cvv": "123"
+}
+```
+
+**Field Validations:**
+
+| Field          | Type   | Required | Validation                       |
+| -------------- | ------ | -------- | -------------------------------- |
+| amount         | number | Yes      | Min: ৳50, Max: ৳25,000           |
+| cardNumber     | string | Yes      | 16 digits                        |
+| cardHolderName | string | Yes      | Min 3 characters                 |
+| expiryMonth    | string | Yes      | Format: MM (01-12)               |
+| expiryYear     | string | Yes      | Format: YY (must not be expired) |
+| cvv            | string | Yes      | 3 digits                         |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Money added successfully",
+  "data": {
+    "transaction": {
+      "id": "T3C4D5E6",
+      "transactionId": "TXN202601271530123",
+      "type": "ADD_MONEY",
+      "amount": 2000.0,
+      "fee": 0.0,
+      "status": "COMPLETED",
+      "description": "Added money from ****-****-****-9012",
+      "createdAt": "2026-01-27T15:30:12.000Z"
+    },
+    "wallet": {
+      "newBalance": 7000.0,
+      "availableBalance": 7000.0
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+- **400 Bad Request** - Invalid card details, insufficient bank balance, or validation errors
+- **403 Forbidden** - Account not active
+- **404 Not Found** - User or wallet not found
+
+**Bank Simulation:**
+
+The system simulates card transactions with a mock bank account system. Cards must have sufficient balance.
+
+---
+
+### Send Money
+
+Send money to another user (P2P transfer) using their phone number or email.
+
+**Endpoint:** `POST /api/transactions/send-money`  
+**Authentication:** Required (Consumer Token Only)
+
+**Headers:**
+
+```
+Authorization: Bearer <consumer_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "recipientIdentifier": "01812345678",
+  "amount": 500,
+  "description": "Payment for lunch"
+}
+```
+
+**Field Validations:**
+
+| Field               | Type   | Required | Validation                                     |
+| ------------------- | ------ | -------- | ---------------------------------------------- |
+| recipientIdentifier | string | Yes      | Phone number or email of recipient             |
+| amount              | number | Yes      | Min: ৳10, Max: ৳25,000                         |
+| description         | string | No       | Max 500 characters                             |
+| pin                 | string | No       | 4 digits (optional, for future implementation) |
+
+**Fee Structure:**
+
+- **₹0 - ₹1,000**: Free
+- **₹1,001 - ₹5,000**: ৳5
+- **₹5,001+**: ৳10
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Money sent successfully",
+  "data": {
+    "transaction": {
+      "id": "T4D5E6F7",
+      "transactionId": "TXN202601271600456",
+      "type": "SEND_MONEY",
+      "amount": 500.0,
+      "fee": 0.0,
+      "status": "COMPLETED",
+      "sender": {
+        "id": "A1B2C3D4",
+        "name": "John Doe"
+      },
+      "receiver": {
+        "id": "B2C3D4E5",
+        "name": "Jane Smith",
+        "phone": "01812345678"
+      },
+      "description": "Payment for lunch",
+      "createdAt": "2026-01-27T16:00:45.000Z"
+    },
+    "wallet": {
+      "newBalance": 6495.0,
+      "availableBalance": 6495.0
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+- **400 Bad Request** - Insufficient balance, validation errors, or cannot send to yourself
+- **403 Forbidden** - Account not active or recipient account suspended
+- **404 Not Found** - Recipient not found
+
+**Notes:**
+
+- Both sender and receiver must have ACTIVE status
+- Cannot send money to yourself
+- Transaction creates ledger entries for both parties
+
+---
+
+### Cash Out
+
+Withdraw cash from wallet through an agent.
+
+**Endpoint:** `POST /api/transactions/cash-out`  
+**Authentication:** Required (Consumer Token Only)
+
+**Headers:**
+
+```
+Authorization: Bearer <consumer_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "agentCode": "AG1234567",
+  "amount": 1000,
+  "description": "Cash withdrawal"
+}
+```
+
+**Field Validations:**
+
+| Field       | Type   | Required | Validation             |
+| ----------- | ------ | -------- | ---------------------- |
+| agentCode   | string | Yes      | Format: AG + 7 digits  |
+| amount      | number | Yes      | Min: ৳50, Max: ৳25,000 |
+| description | string | No       | Max 500 characters     |
+
+**Fee & Commission:**
+
+- **Consumer Fee**: 1.85% of amount
+- **Agent Commission**: 1.5% of amount (credited to agent)
+
+**Example Calculation:**
+
+```
+Amount: ৳1,000
+Fee: ৳18.50 (1.85%)
+Total Deducted from Consumer: ৳1,018.50
+
+Agent Receives: ৳1,015.00 (₹1,000 + ₹15 commission)
+Commission: ৳15.00 (1.5%)
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Cash out successful",
+  "data": {
+    "transaction": {
+      "id": "T5E6F7G8",
+      "transactionId": "TXN202601271700789",
+      "type": "CASH_OUT",
+      "amount": 1000.0,
+      "fee": 18.5,
+      "totalDeducted": 1018.5,
+      "status": "COMPLETED",
+      "agent": {
+        "agentCode": "AG1234567",
+        "businessName": "Khan Mobile Banking"
+      },
+      "description": "Cash withdrawal",
+      "createdAt": "2026-01-27T17:00:12.000Z"
+    },
+    "wallet": {
+      "newBalance": 5476.5,
+      "availableBalance": 5476.5
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+- **400 Bad Request** - Insufficient balance, validation errors, or invalid agent code
+- **403 Forbidden** - Account not active or agent not active
+- **404 Not Found** - Agent not found
+
+**Notes:**
+
+- Agent must have ACTIVE status
+- Fee is deducted from consumer wallet
+- Commission is credited to agent wallet
+- Platform wallet collects the fee
+
+---
+
+### Transaction History
+
+Get paginated transaction history with optional filters.
+
+**Endpoint:** `GET /api/transactions/history`  
+**Authentication:** Required (Consumer or Agent Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default | Description                |
+| --------- | ------ | -------- | ------- | -------------------------- |
+| page      | number | No       | 1       | Page number                |
+| limit     | number | No       | 20      | Items per page (max 100)   |
+| type      | string | No       | -       | Filter by transaction type |
+| status    | string | No       | -       | Filter by status           |
+
+**Transaction Types:**
+
+- `SEND_MONEY` - P2P transfer
+- `ADD_MONEY` - Card to wallet
+- `CASH_OUT` - Withdrawal through agent
+- `CASH_IN` - Agent deposit
+- `BILL_PAYMENT` - Utility bill payment
+- `BANK_TRANSFER` - Bank withdrawal
+- `CASHBACK` - Offer cashback
+- `COMMISSION` - Agent commission
+- `ONBOARDING_BONUS` - Welcome bonus
+
+**Transaction Status:**
+
+- `PENDING` - Awaiting processing
+- `PROCESSING` - Being processed
+- `COMPLETED` - Successfully completed
+- `FAILED` - Transaction failed
+
+**Example Request:**
+
+```
+GET /api/transactions/history?page=1&limit=10&type=SEND_MONEY&status=COMPLETED
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Transaction history retrieved successfully",
+  "data": {
+    "transactions": [
+      {
+        "id": "T1A2B3C4",
+        "transactionId": "TXN202601271234567",
+        "type": "SEND_MONEY",
+        "amount": 500.0,
+        "fee": 0.0,
+        "status": "COMPLETED",
+        "description": "Payment for lunch",
+        "sender": {
+          "id": "A1B2C3D4",
+          "name": "John Doe"
+        },
+        "receiver": {
+          "id": "B2C3D4E5",
+          "name": "Jane Smith"
+        },
+        "createdAt": "2026-01-27T12:34:56.000Z",
+        "completedAt": "2026-01-27T12:34:57.000Z"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalCount": 47,
+      "limit": 10
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+- **400 Bad Request** - Invalid query parameters
+
+---
+
+### Transaction Details
+
+Get detailed information about a specific transaction.
+
+**Endpoint:** `GET /api/transactions/:id`  
+**Authentication:** Required (Consumer or Agent Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters:**
+
+| Parameter | Type   | Required | Description    |
+| --------- | ------ | -------- | -------------- |
+| id        | string | Yes      | Transaction ID |
+
+**Example Request:**
+
+```
+GET /api/transactions/T1A2B3C4
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Transaction details retrieved successfully",
+  "data": {
+    "transaction": {
+      "id": "T1A2B3C4",
+      "transactionId": "TXN202601271234567",
+      "type": "SEND_MONEY",
+      "amount": 500.0,
+      "fee": 0.0,
+      "status": "COMPLETED",
+      "description": "Payment for lunch",
+      "sender": {
+        "id": "A1B2C3D4",
+        "name": "John Doe",
+        "phone": "01712345678"
+      },
+      "receiver": {
+        "id": "B2C3D4E5",
+        "name": "Jane Smith",
+        "phone": "01812345678"
+      },
+      "metadata": {},
+      "createdAt": "2026-01-27T12:34:56.000Z",
+      "completedAt": "2026-01-27T12:34:57.000Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+- **403 Forbidden** - Not authorized to view this transaction
+- **404 Not Found** - Transaction not found
+
+**Notes:**
+
+- Users can only view their own transactions (sent or received)
+- Admins can view all transactions
 
 ---
 

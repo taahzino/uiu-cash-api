@@ -3,15 +3,21 @@ import {
   addMoney,
   sendMoney,
   cashOut,
+  cashIn,
   getTransactionHistory,
   getTransactionDetails,
 } from "../controllers/transaction.controller";
-import { authenticateUser, authenticateConsumer } from "../middleware/auth";
+import {
+  authenticateUser,
+  authenticateConsumer,
+  authenticateAgent,
+} from "../middleware/auth";
 import validateZodSchema from "../middleware/app/validateZodSchema";
 import {
   addMoneySchema,
   sendMoneySchema,
   cashOutSchema,
+  cashInSchema,
   getTransactionHistorySchema,
   getTransactionDetailsSchema,
 } from "../validators/transaction.validator";
@@ -52,6 +58,18 @@ router.post(
   authenticateConsumer,
   validateZodSchema(cashOutSchema, "body"),
   cashOut,
+);
+
+/**
+ * @route   POST /api/transactions/cash-in
+ * @desc    Agent accepts cash from consumer and credits their wallet
+ * @access  Private (Agent only)
+ */
+router.post(
+  "/cash-in",
+  authenticateAgent,
+  validateZodSchema(cashInSchema, "body"),
+  cashIn,
 );
 
 /**

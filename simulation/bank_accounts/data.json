@@ -45,7 +45,7 @@
       "bank_name": "Brac Bank",
       "branch_name": "Gulshan Branch",
       "account_type": "SAVINGS",
-      "balance": 89500,
+      "balance": 69500,
       "routing_number": "060270781",
       "status": "ACTIVE",
       "created_at": "2024-03-05T09:15:00Z",

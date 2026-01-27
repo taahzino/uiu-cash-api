@@ -642,6 +642,40 @@ export const cashOut = async (req: Request, res: Response) => {
         commissionAmount,
     });
 
+    // Create separate COMMISSION transaction for agent earnings
+    const commissionTransaction = await Transactions.createTransaction({
+      type: TransactionType.COMMISSION,
+      receiver_id: agent.user_id,
+      receiver_wallet_id: agentWallet.id,
+      amount: commissionAmount,
+      fee: 0,
+      description: `Commission earned from cash out transaction ${transaction.transaction_id}`,
+      metadata: {
+        related_transaction_id: transaction.id,
+        transaction_type: "CASH_OUT",
+        agent_code: agent.agent_code,
+        consumer_name: `${consumer.first_name} ${consumer.last_name}`,
+        cash_out_amount: amount,
+      },
+    });
+
+    // Mark commission transaction as completed
+    await Transactions.updateById(commissionTransaction.id, {
+      status: TransactionStatus.COMPLETED,
+      completed_at: new Date(),
+    });
+
+    // Create ledger entry for commission (credit to agent)
+    await Ledgers.createLedgerEntry({
+      transaction_id: commissionTransaction.id,
+      wallet_id: agentWallet.id,
+      entry_type: EntryType.CREDIT,
+      amount: commissionAmount,
+      balance_before: agentNewBalance,
+      balance_after: agentNewBalance, // Balance already updated, so before = after for commission ledger
+      description: `Commission from cash out`,
+    });
+
     // Credit transaction fee to platform wallet
     try {
       await platformWallet.creditBalance(
@@ -668,6 +702,34 @@ export const cashOut = async (req: Request, res: Response) => {
     } catch (platformError: any) {
       logger.error(
         `Failed to credit platform wallet for transaction ${transaction.transaction_id}: ${platformError.message}`,
+      );
+    }
+
+    // Debit commission from platform wallet
+    try {
+      await platformWallet.debitBalance(
+        commissionAmount,
+        `Commission paid to agent ${agent.agent_code} for transaction ${transaction.transaction_id}`,
+        {
+          transaction_type: PlatformTransactionType.COMMISSION_PAID,
+          related_transaction_id: commissionTransaction.id,
+          related_user_id: agent.user_id,
+          metadata: {
+            transaction_id: commissionTransaction.transaction_id,
+            commission_type: "CASH_OUT_COMMISSION",
+            agent_code: agent.agent_code,
+            agent_name: agent.business_name,
+            cash_out_amount: amount,
+          },
+        },
+      );
+
+      logger.info(
+        `Platform wallet debited ৳${commissionAmount} commission for cash out transaction ${transaction.transaction_id}`,
+      );
+    } catch (platformError: any) {
+      logger.error(
+        `Failed to debit platform wallet commission for transaction ${transaction.transaction_id}: ${platformError.message}`,
       );
     }
 
@@ -816,6 +878,289 @@ export const getTransactionHistory = async (req: Request, res: Response) => {
     logger.error("Get transaction history error: " + error.message);
     return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
       message: "An error occurred while fetching transaction history",
+    });
+  }
+};
+
+/**
+ * Cash In Controller
+ * POST /api/transactions/cash-in
+ * Agent accepts physical cash from consumer and credits their digital wallet
+ */
+export const cashIn = async (req: Request, res: Response) => {
+  try {
+    const agentId = req.user?.id;
+    if (!agentId) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "User authentication required",
+      });
+    }
+
+    const { consumerIdentifier, amount, description } = req.body;
+
+    // Get agent
+    const agentUser = await Users.findById(agentId);
+    if (!agentUser) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Agent not found",
+      });
+    }
+
+    // Check agent status
+    if (agentUser.status !== "ACTIVE") {
+      return sendResponse(res, STATUS_FORBIDDEN, {
+        message: "Your account is not active",
+      });
+    }
+
+    // Get agent profile
+    const agent = await Agents.findByUserId(agentId);
+    if (!agent) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Agent profile not found",
+      });
+    }
+
+    // Check if agent is active
+    if (agent.status !== "ACTIVE") {
+      return sendResponse(res, STATUS_FORBIDDEN, {
+        message: "Agent account is not active. Please contact support.",
+      });
+    }
+
+    // Get agent wallet
+    const agentWallet = await Wallets.findByUserId(agentId);
+    if (!agentWallet) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Agent wallet not found",
+      });
+    }
+
+    // Find consumer by email or phone
+    const consumer = await Users.findByEmailOrPhone(consumerIdentifier);
+    if (!consumer) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Consumer not found",
+      });
+    }
+
+    // Check if trying to cash in to self
+    if (agentUser.id === consumer.id) {
+      return sendResponse(res, STATUS_BAD_REQUEST, {
+        message: "Cannot process cash in to your own account",
+      });
+    }
+
+    // Check consumer status
+    if (consumer.status !== "ACTIVE") {
+      return sendResponse(res, STATUS_FORBIDDEN, {
+        message: "Consumer account is not active",
+      });
+    }
+
+    // Get consumer wallet
+    const consumerWallet = await Wallets.findByUserId(consumer.id);
+    if (!consumerWallet) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Consumer wallet not found",
+      });
+    }
+
+    // Get agent commission from system config (cash in commission is 1/10th of regular commission)
+    const commissionConfig = await SystemConfig.findByKey(
+      "agent_commission_percentage",
+    );
+    const commissionPercentage = commissionConfig
+      ? parseFloat(commissionConfig.config_value) / 10
+      : 0.15; // Default 0.15% (1.5% / 10)
+    const commissionAmount = (amount * commissionPercentage) / 100;
+
+    // Check if agent has sufficient balance (agent needs to have balance to credit consumer)
+    const totalRequired = amount - commissionAmount; // Agent pays amount but receives commission
+    if (parseFloat(agentWallet.available_balance.toString()) < totalRequired) {
+      return sendResponse(res, STATUS_BAD_REQUEST, {
+        message: "Insufficient agent wallet balance to process cash in",
+        data: {
+          required: totalRequired,
+          available: agentWallet.available_balance,
+        },
+      });
+    }
+
+    // Calculate new balances
+    const agentNewBalance =
+      parseFloat(agentWallet.balance.toString()) - amount + commissionAmount;
+    const agentNewAvailable =
+      parseFloat(agentWallet.available_balance.toString()) -
+      amount +
+      commissionAmount;
+    const consumerNewBalance =
+      parseFloat(consumerWallet.balance.toString()) + amount;
+    const consumerNewAvailable =
+      parseFloat(consumerWallet.available_balance.toString()) + amount;
+
+    // Create transaction record
+    const transaction = await Transactions.createTransaction({
+      type: TransactionType.CASH_IN,
+      sender_id: agentId,
+      receiver_id: consumer.id,
+      sender_wallet_id: agentWallet.id,
+      receiver_wallet_id: consumerWallet.id,
+      amount: amount,
+      fee: 0, // No fee for cash in
+      description: description || `Cash in from agent ${agent.agent_code}`,
+      metadata: {
+        agent_code: agent.agent_code,
+        agent_name: agent.business_name,
+        commission_amount: commissionAmount,
+        commission_percentage: commissionPercentage,
+      },
+    });
+
+    // Update agent wallet
+    await Wallets.updateBalance(
+      agentWallet.id,
+      agentNewBalance,
+      agentNewAvailable,
+    );
+
+    // Create ledger entry for agent (net debit: amount - commission)
+    await Ledgers.createLedgerEntry({
+      transaction_id: transaction.id,
+      wallet_id: agentWallet.id,
+      entry_type: EntryType.DEBIT,
+      amount: amount - commissionAmount,
+      balance_before: parseFloat(agentWallet.balance.toString()),
+      balance_after: agentNewBalance,
+      description: `Cash in to ${consumer.first_name} ${consumer.last_name}`,
+    });
+
+    // Update consumer wallet
+    await Wallets.updateBalance(
+      consumerWallet.id,
+      consumerNewBalance,
+      consumerNewAvailable,
+    );
+
+    // Create ledger entry for consumer (credit)
+    await Ledgers.createLedgerEntry({
+      transaction_id: transaction.id,
+      wallet_id: consumerWallet.id,
+      entry_type: EntryType.CREDIT,
+      amount: amount,
+      balance_before: parseFloat(consumerWallet.balance.toString()),
+      balance_after: consumerNewBalance,
+      description: `Cash in from agent ${agent.business_name}`,
+    });
+
+    // Update agent commission earned
+    await Agents.updateById(agent.id, {
+      total_commission_earned:
+        parseFloat(agent.total_commission_earned?.toString() || "0") +
+        commissionAmount,
+    });
+
+    // Create separate COMMISSION transaction for agent earnings
+    const commissionTransaction = await Transactions.createTransaction({
+      type: TransactionType.COMMISSION,
+      receiver_id: agentId,
+      receiver_wallet_id: agentWallet.id,
+      amount: commissionAmount,
+      fee: 0,
+      description: `Commission earned from cash in transaction ${transaction.transaction_id}`,
+      metadata: {
+        related_transaction_id: transaction.id,
+        transaction_type: "CASH_IN",
+        agent_code: agent.agent_code,
+        consumer_name: `${consumer.first_name} ${consumer.last_name}`,
+        cash_in_amount: amount,
+      },
+    });
+
+    // Mark commission transaction as completed
+    await Transactions.updateById(commissionTransaction.id, {
+      status: TransactionStatus.COMPLETED,
+      completed_at: new Date(),
+    });
+
+    // Create ledger entry for commission (credit to agent)
+    await Ledgers.createLedgerEntry({
+      transaction_id: commissionTransaction.id,
+      wallet_id: agentWallet.id,
+      entry_type: EntryType.CREDIT,
+      amount: commissionAmount,
+      balance_before: agentNewBalance,
+      balance_after: agentNewBalance, // Balance already updated, so before = after for commission ledger
+      description: `Commission from cash in`,
+    });
+
+    // Credit commission to platform wallet tracking
+    try {
+      await platformWallet.debitBalance(
+        commissionAmount,
+        `Cash in commission to agent ${agent.agent_code} for transaction ${transaction.transaction_id}`,
+        {
+          transaction_type: PlatformTransactionType.COMMISSION_PAID,
+          related_transaction_id: commissionTransaction.id,
+          related_user_id: agentId,
+          metadata: {
+            transaction_id: commissionTransaction.transaction_id,
+            commission_type: "CASH_IN_COMMISSION",
+            agent_code: agent.agent_code,
+            agent_name: agent.business_name,
+            consumer_name: `${consumer.first_name} ${consumer.last_name}`,
+            cash_in_amount: amount,
+          },
+        },
+      );
+
+      logger.info(
+        `Platform wallet debited ৳${commissionAmount} commission for cash in transaction ${transaction.transaction_id}`,
+      );
+    } catch (platformError: any) {
+      logger.error(
+        `Failed to debit platform wallet for transaction ${transaction.transaction_id}: ${platformError.message}`,
+      );
+    }
+
+    // Update transaction status to completed
+    await Transactions.updateById(transaction.id, {
+      status: TransactionStatus.COMPLETED,
+      completed_at: new Date(),
+    });
+
+    logger.info(
+      `Cash in successful: Agent ${agentId} credited ৳${amount} to consumer ${consumer.id} (Commission: ৳${commissionAmount})`,
+    );
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Cash in successful. Consumer's wallet has been credited.",
+      data: {
+        transaction: {
+          id: transaction.id,
+          transactionId: transaction.transaction_id,
+          amount: amount,
+          fee: 0,
+          commission: commissionAmount,
+          type: TransactionType.CASH_IN,
+          status: TransactionStatus.COMPLETED,
+          consumer: {
+            name: `${consumer.first_name} ${consumer.last_name}`,
+            phone: consumer.phone,
+          },
+          description: transaction.description,
+          createdAt: transaction.created_at,
+        },
+        agentWallet: {
+          balance: agentNewBalance,
+          availableBalance: agentNewAvailable,
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error("Cash in error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred during cash in",
     });
   }
 };

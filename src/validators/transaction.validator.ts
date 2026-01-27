@@ -91,6 +91,18 @@ export const cashOutSchema = z.object({
 });
 
 /**
+ * Cash In Schema (agent accepts cash from consumer)
+ */
+export const cashInSchema = z.object({
+  consumerIdentifier: z.string().min(1, "Consumer phone or email is required"),
+  amount: z
+    .number()
+    .min(50, "Minimum cash in amount is ৳50")
+    .max(25000, "Maximum cash in amount is ৳25,000"),
+  description: descriptionSchema,
+});
+
+/**
  * Get Transaction History Schema
  */
 export const getTransactionHistorySchema = z.object({

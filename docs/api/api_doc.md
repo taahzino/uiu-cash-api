@@ -17,6 +17,7 @@
    - [Add Money](#add-money)
    - [Send Money](#send-money)
    - [Cash Out](#cash-out)
+   - [Cash In](#cash-in)
    - [Transaction History](#transaction-history)
    - [Transaction Details](#transaction-details)
 4. [Admin - Consumer Management](#admin-consumer-management)
@@ -1247,6 +1248,100 @@ Commission: ৳15.00 (1.5%)
 - Fee is deducted from consumer wallet
 - Commission is credited to agent wallet
 - Platform wallet collects the fee
+
+---
+
+### Cash In
+
+Agent accepts physical cash from consumer and credits their digital wallet.
+
+**Endpoint:** `POST /api/transactions/cash-in`  
+**Authentication:** Required (Agent Token Only)
+
+**Headers:**
+
+```
+Authorization: Bearer <agent_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "consumerIdentifier": "consumer@example.com",
+  "amount": 1000,
+  "description": "Cash deposit"
+}
+```
+
+**Field Validations:**
+
+| Field              | Type   | Required | Validation             |
+| ------------------ | ------ | -------- | ---------------------- |
+| consumerIdentifier | string | Yes      | Phone number or email  |
+| amount             | number | Yes      | Min: ৳50, Max: ৳25,000 |
+| description        | string | No       | Max 500 characters     |
+
+**Commission:**
+
+- **Agent Commission**: (agent_commission_rate / 10) of amount
+- **Default Commission**: 0.15% (when agent_commission_rate is 1.5%)
+- **No Fee for Consumer**
+
+**Example Calculation:**
+
+```
+Amount: ৳1,000
+Commission: ৳1.50 (0.15%)
+
+Consumer Receives: ৳1,000 (full amount)
+Agent Net Cost: ৳998.50 (paid ৳1,000, received ৳1.50 commission)
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Cash in successful. Consumer's wallet has been credited.",
+  "data": {
+    "transaction": {
+      "id": "T1A2B3C4",
+      "transactionId": "TXN-20260128-123456",
+      "amount": 1000,
+      "fee": 0,
+      "commission": 1.5,
+      "type": "CASH_IN",
+      "status": "COMPLETED",
+      "consumer": {
+        "name": "John Doe",
+        "phone": "01812345678"
+      },
+      "description": "Cash deposit",
+      "createdAt": "2026-01-28T10:30:00.000Z"
+    },
+    "agentWallet": {
+      "balance": 10001.5,
+      "availableBalance": 10001.5
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+- **400 Bad Request** - Insufficient agent balance, validation errors, or cannot process to own account
+- **403 Forbidden** - Agent account not active or consumer account not active
+- **404 Not Found** - Consumer not found
+
+**Notes:**
+
+- Only agents can perform cash in operations
+- Agent must have sufficient wallet balance to credit consumer
+- Consumer receives full amount with no fee deduction
+- Agent earns commission from platform for the service
+- Commission is 1/10th of regular agent commission rate
 
 ---
 

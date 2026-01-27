@@ -106,17 +106,17 @@ async function initializeDatabase() {
     logger.info("System configurations initialized!");
 
     // Check if default admin exists
-    const existingAdmin = await Admins.findByEmail("admin@uiucash.com");
+    const existingAdmin = await Admins.findByEmail(process.env.ADMIN_EMAIL || "");
 
     if (!existingAdmin) {
       logger.info("Creating default admin account...");
 
-      const password = "Admin@123"; // Change this password immediately after first login
+      const password = process.env.ADMIN_PASSWORD || "Admin@123"; // Change this password immediately after first login
       const password_hash = await hashPassword(password);
       const public_key = uuidv4();
 
       await Admins.createAdmin({
-        email: "admin@uiucash.com",
+        email: process.env.ADMIN_EMAIL || "admin@uiucash.com",
         password_hash,
         public_key,
         name: "System Administrator",
@@ -124,8 +124,8 @@ async function initializeDatabase() {
       });
 
       logger.info("Admin account created successfully!");
-      logger.info("Email: admin@uiucash.com");
-      logger.info("Password: Admin@123");
+      logger.info(`Email: ${process.env.ADMIN_EMAIL || "admin@uiucash.com"}`);
+      logger.info(`Password: ${process.env.ADMIN_PASSWORD || "Admin@123"}`);
       logger.warn(
         "IMPORTANT: Change this password immediately after first login!",
       );

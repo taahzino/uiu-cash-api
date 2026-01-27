@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   addMoney,
   sendMoney,
+  cashOut,
   getTransactionHistory,
   getTransactionDetails,
 } from "../controllers/transaction.controller";
@@ -10,6 +11,7 @@ import validateZodSchema from "../middleware/app/validateZodSchema";
 import {
   addMoneySchema,
   sendMoneySchema,
+  cashOutSchema,
   getTransactionHistorySchema,
   getTransactionDetailsSchema,
 } from "../validators/transaction.validator";
@@ -38,6 +40,18 @@ router.post(
   authenticateConsumer,
   validateZodSchema(sendMoneySchema, "body"),
   sendMoney,
+);
+
+/**
+ * @route   POST /api/transactions/cash-out
+ * @desc    Cash out from wallet through agent
+ * @access  Private (Consumer only)
+ */
+router.post(
+  "/cash-out",
+  authenticateConsumer,
+  validateZodSchema(cashOutSchema, "body"),
+  cashOut,
 );
 
 /**

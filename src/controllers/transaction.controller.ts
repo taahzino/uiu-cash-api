@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import logger from "../config/_logger";
 import { Users } from "../models/Users.model";
 import { Wallets } from "../models/Wallets.model";
+import { Agents } from "../models/Agents.model";
 import {
   Transactions,
   TransactionType,
@@ -413,6 +414,254 @@ export const sendMoney = async (req: Request, res: Response) => {
     logger.error("Send money error: " + error.message);
     return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
       message: "An error occurred while sending money",
+    });
+  }
+};
+
+/**
+ * Cash Out Controller
+ * POST /api/transactions/cash-out
+ * Consumer withdraws cash through agent
+ */
+export const cashOut = async (req: Request, res: Response) => {
+  try {
+    const consumerId = req.user?.id;
+    if (!consumerId) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "User authentication required",
+      });
+    }
+
+    const { agentCode, amount, description } = req.body;
+
+    // Get consumer
+    const consumer = await Users.findById(consumerId);
+    if (!consumer) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Consumer not found",
+      });
+    }
+
+    // Check consumer status
+    if (consumer.status !== "ACTIVE") {
+      return sendResponse(res, STATUS_FORBIDDEN, {
+        message: "Your account is not active",
+      });
+    }
+
+    // Get consumer wallet
+    const consumerWallet = await Wallets.findByUserId(consumerId);
+    if (!consumerWallet) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Consumer wallet not found",
+      });
+    }
+
+    // Find agent by agent code
+    const agent = await Agents.findByAgentCode(agentCode);
+    if (!agent) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Agent not found with the provided agent code",
+      });
+    }
+
+    // Check if agent is active
+    if (agent.status !== "ACTIVE") {
+      return sendResponse(res, STATUS_FORBIDDEN, {
+        message: "Agent is not active. Please find another agent.",
+      });
+    }
+
+    // Get agent user and wallet
+    const agentUser = await Users.findById(agent.user_id);
+    if (!agentUser || agentUser.status !== "ACTIVE") {
+      return sendResponse(res, STATUS_FORBIDDEN, {
+        message: "Agent account is not active",
+      });
+    }
+
+    const agentWallet = await Wallets.findByUserId(agent.user_id);
+    if (!agentWallet) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Agent wallet not found",
+      });
+    }
+
+    // Get cash out fee from system config
+    const feeConfig = await SystemConfig.findByKey("cash_out_fee_percentage");
+    const feePercentage = feeConfig ? parseFloat(feeConfig.config_value) : 1.85;
+    const feeAmount = (amount * feePercentage) / 100;
+    const totalAmount = amount + feeAmount;
+
+    // Get agent commission from system config
+    const commissionConfig = await SystemConfig.findByKey(
+      "agent_commission_percentage",
+    );
+    const commissionPercentage = commissionConfig
+      ? parseFloat(commissionConfig.config_value)
+      : 1.5;
+    const commissionAmount = (amount * commissionPercentage) / 100;
+
+    // Check if consumer has sufficient balance
+    if (parseFloat(consumerWallet.available_balance.toString()) < totalAmount) {
+      return sendResponse(res, STATUS_BAD_REQUEST, {
+        message: "Insufficient balance",
+      });
+    }
+
+    // Check daily spending limit
+    const dailySpent = parseFloat(consumerWallet.daily_spent.toString());
+    const dailyLimit = parseFloat(consumerWallet.daily_limit.toString());
+    if (dailySpent + totalAmount > dailyLimit) {
+      return sendResponse(res, STATUS_FORBIDDEN, {
+        message: `Daily transaction limit exceeded. Limit: ৳${dailyLimit}, Spent: ৳${dailySpent}`,
+      });
+    }
+
+    // Calculate new balances
+    const consumerNewBalance =
+      parseFloat(consumerWallet.balance.toString()) - totalAmount;
+    const consumerNewAvailable =
+      parseFloat(consumerWallet.available_balance.toString()) - totalAmount;
+    const agentNewBalance =
+      parseFloat(agentWallet.balance.toString()) + amount + commissionAmount;
+    const agentNewAvailable =
+      parseFloat(agentWallet.available_balance.toString()) +
+      amount +
+      commissionAmount;
+
+    // Create transaction record
+    const transaction = await Transactions.createTransaction({
+      type: TransactionType.CASH_OUT,
+      sender_id: consumerId,
+      receiver_id: agent.user_id,
+      sender_wallet_id: consumerWallet.id,
+      receiver_wallet_id: agentWallet.id,
+      amount: amount,
+      fee: feeAmount,
+      description: description || `Cash out through agent ${agent.agent_code}`,
+      metadata: {
+        agent_code: agent.agent_code,
+        agent_name: agent.business_name,
+        commission_amount: commissionAmount,
+        commission_percentage: commissionPercentage,
+      },
+    });
+
+    // Update consumer wallet
+    await Wallets.updateBalance(
+      consumerWallet.id,
+      consumerNewBalance,
+      consumerNewAvailable,
+    );
+
+    // Update consumer spending
+    await Wallets.incrementSpending(consumerWallet.id, totalAmount, "daily");
+
+    // Create ledger entry for consumer (debit)
+    await Ledgers.createLedgerEntry({
+      transaction_id: transaction.id,
+      wallet_id: consumerWallet.id,
+      entry_type: EntryType.DEBIT,
+      amount: totalAmount,
+      balance_before: parseFloat(consumerWallet.balance.toString()),
+      balance_after: consumerNewBalance,
+      description: `Cash out through agent ${agent.business_name}`,
+    });
+
+    // Update agent wallet
+    await Wallets.updateBalance(
+      agentWallet.id,
+      agentNewBalance,
+      agentNewAvailable,
+    );
+
+    // Create ledger entry for agent (credit)
+    await Ledgers.createLedgerEntry({
+      transaction_id: transaction.id,
+      wallet_id: agentWallet.id,
+      entry_type: EntryType.CREDIT,
+      amount: amount + commissionAmount,
+      balance_before: parseFloat(agentWallet.balance.toString()),
+      balance_after: agentNewBalance,
+      description: `Cash out from ${consumer.first_name} ${consumer.last_name} (includes commission)`,
+    });
+
+    // Update agent commission earned
+    await Agents.updateById(agent.id, {
+      total_commission_earned:
+        parseFloat(agent.total_commission_earned?.toString() || "0") +
+        commissionAmount,
+    });
+
+    // Credit transaction fee to platform wallet
+    try {
+      await platformWallet.creditBalance(
+        feeAmount,
+        `Cash out fee from transaction ${transaction.transaction_id}`,
+        {
+          transaction_type: PlatformTransactionType.FEE_COLLECTED,
+          related_transaction_id: transaction.id,
+          related_user_id: consumerId,
+          metadata: {
+            transaction_id: transaction.transaction_id,
+            fee_type: "CASH_OUT_FEE",
+            consumer_name: `${consumer.first_name} ${consumer.last_name}`,
+            agent_code: agent.agent_code,
+            agent_name: agent.business_name,
+            amount_withdrawn: amount,
+          },
+        },
+      );
+
+      logger.info(
+        `Platform wallet credited with ৳${feeAmount} fee from cash out transaction ${transaction.transaction_id}`,
+      );
+    } catch (platformError: any) {
+      logger.error(
+        `Failed to credit platform wallet for transaction ${transaction.transaction_id}: ${platformError.message}`,
+      );
+    }
+
+    // Update transaction status to completed
+    await Transactions.updateById(transaction.id, {
+      status: TransactionStatus.COMPLETED,
+      completed_at: new Date(),
+    });
+
+    logger.info(
+      `Cash out successful: ${consumerId} withdrew ৳${amount} through agent ${agent.agent_code} (Fee: ৳${feeAmount}, Commission: ৳${commissionAmount})`,
+    );
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Cash out successful. You can now collect cash from the agent.",
+      data: {
+        transaction: {
+          id: transaction.id,
+          transactionId: transaction.transaction_id,
+          amount: amount,
+          fee: feeAmount,
+          totalAmount: totalAmount,
+          type: TransactionType.CASH_OUT,
+          status: TransactionStatus.COMPLETED,
+          agent: {
+            code: agent.agent_code,
+            name: agent.business_name,
+            address: agent.business_address,
+          },
+          description: transaction.description,
+          createdAt: transaction.created_at,
+        },
+        wallet: {
+          balance: consumerNewBalance,
+          availableBalance: consumerNewAvailable,
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error("Cash out error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred during cash out",
     });
   }
 };

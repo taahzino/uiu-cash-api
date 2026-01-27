@@ -80,6 +80,8 @@ export async function initializeDatabase(): Promise<void> {
     const { BillPayments } = await import("../models/BillPayments.model");
     const { Ledgers } = await import("../models/Ledgers.model");
     const { Offers } = await import("../models/Offers.model");
+    const { PlatformWalletTransactions } =
+      await import("../models/PlatformWalletTransactions.model");
     const { Sessions } = await import("../models/Sessions.model");
     const { SystemConfig } = await import("../models/SystemConfig.model");
     const { Transactions } = await import("../models/Transactions.model");
@@ -105,6 +107,7 @@ export async function initializeDatabase(): Promise<void> {
     await AgentCashouts.initialize();
     await BillPayments.initialize();
     await BankTransfers.initialize();
+    await PlatformWalletTransactions.initialize();
 
     // Level 5: Offers and related tables
     await Offers.initialize();
@@ -198,6 +201,39 @@ export async function initializeDatabase(): Promise<void> {
     }
 
     logger.info("All default system configurations initialized");
+
+    // Create default admin if not exists
+    const { v4: uuidv4 } = await import("uuid");
+    const { hashPassword } = await import("../utilities/password");
+
+    const existingAdmin = await Admins.findByEmail(
+      process.env.ADMIN_EMAIL || "",
+    );
+
+    if (!existingAdmin) {
+      logger.info("Creating default admin account...");
+
+      const password = process.env.ADMIN_PASSWORD || "Admin@123";
+      const password_hash = await hashPassword(password);
+      const public_key = uuidv4();
+
+      await Admins.createAdmin({
+        email: process.env.ADMIN_EMAIL || "admin@uiucash.com",
+        password_hash,
+        public_key,
+        name: "System Administrator",
+        created_by: null,
+      });
+
+      logger.info("Admin account created successfully!");
+      logger.info(`Email: ${process.env.ADMIN_EMAIL || "admin@uiucash.com"}`);
+      logger.info(`Password: ${password}`);
+      logger.warn(
+        "IMPORTANT: Change this password immediately after first login!",
+      );
+    } else {
+      logger.info("Admin account already exists.");
+    }
   } catch (error: any) {
     logger.error("Database initialization failed: " + error.message);
     logger.error(error);

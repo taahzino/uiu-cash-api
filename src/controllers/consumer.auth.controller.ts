@@ -211,6 +211,13 @@ export const consumerLogin = async (req: Request, res: Response) => {
       });
     }
 
+    // Verify user is a consumer
+    if (user.role !== UserRole.CONSUMER) {
+      return sendResponse(res, STATUS_FORBIDDEN, {
+        message: "Access denied. Consumer credentials required.",
+      });
+    }
+
     // Check account status
     if (user.status === UserStatus.SUSPENDED) {
       return sendResponse(res, STATUS_FORBIDDEN, {
@@ -298,6 +305,8 @@ export const consumerLogout = async (req: Request, res: Response) => {
         message: "User authentication required",
       });
     }
+
+    console.log("Logging out user:", userId);
 
     // Generate new public key to invalidate all existing tokens
     const new_public_key = uuidv4();

@@ -59,6 +59,21 @@ export const sendMoneySchema = z.object({
 });
 
 /**
+ * Cash Out Schema (through agent)
+ */
+export const cashOutSchema = z.object({
+  agentCode: z
+    .string()
+    .min(1, "Agent code is required")
+    .regex(/^AG\d{7}$/, "Invalid agent code format (AG + 7 digits)"),
+  amount: z
+    .number()
+    .min(50, "Minimum cash out amount is ৳50")
+    .max(25000, "Maximum cash out amount is ৳25,000"),
+  description: descriptionSchema,
+});
+
+/**
  * Get Transaction History Schema
  */
 export const getTransactionHistorySchema = z.object({

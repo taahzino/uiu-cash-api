@@ -191,13 +191,13 @@
 
 ### Task 5.1: Implement Agent Registration API
 
-**Status**: � Completed  
+**Status**: 🟢 Completed  
 **Description**: Create POST /api/agents/register endpoint with business_name, business_address, auto-generate agent_code (AG + 7 digits), set status PENDING.  
 **Estimated Time**: 3 hours
 
 ### Task 5.2: Implement Agent Approval Workflow API
 
-**Status**: � Completed  
+**Status**: 🟢 Completed  
 **Description**: Create admin endpoints POST /api/admin/agents/:id/approve and /reject to change agent status, record approved_by, and send notifications.  
 **Estimated Time**: 4 hours
 
@@ -209,13 +209,13 @@
 
 ### Task 5.4: Implement Cash Out Initiate API (User Side)
 
-**Status**: � Completed  
+**Status**: 🟢 Completed  
 **Description**: Create POST /api/transactions/cash-out/initiate with agentId, amount, calculate cash_out_fee (1.85%), validate user balance and agent float.  
 **Estimated Time**: 4 hours
 
 ### Task 5.5: Implement Cash Out Complete API (Agent Side)
 
-**Status**: � Completed  
+**Status**: 🟢 Completed  
 **Description**: Create POST /api/agent/cash-out/complete endpoint to finalize withdrawal, deduct from agent float, credit agent commission, update transaction status.  
 **Estimated Time**: 4 hours
 

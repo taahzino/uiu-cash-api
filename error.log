@@ -1,1 +1,2 @@
 {"level":"error","message":"Database initialization failed: Unknown column 'deleted_at' in 'where clause'","service":"user-service","timestamp":"2026-01-13T16:22:26.354Z"}
+{"level":"error","message":"Update user profile error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ', updated_at = CURRENT_TIMESTAMP WHERE id = ?' at line 1","service":"user-service","timestamp":"2026-01-27T14:06:38.951Z"}

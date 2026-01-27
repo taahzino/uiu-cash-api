@@ -69,6 +69,8 @@ export const authenticate = (
           admin.status === "ACTIVE"
         ) {
           isValid = true;
+          // Set admin data in res.locals for admin-specific operations
+          res.locals.admin = admin;
         }
       } else if (
         decoded.userType === "Consumer" ||
@@ -96,6 +98,8 @@ export const authenticate = (
           message: "Invalid session. Please login again.",
         });
       }
+
+      console.log(`${decoded.userType} authenticated: ID=${decoded.id}`);
 
       // Attach decoded user data to request
       req.user = decoded;

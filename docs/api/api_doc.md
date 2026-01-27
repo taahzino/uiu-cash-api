@@ -786,8 +786,9 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### 3. Get Admin Profileuth/admin/profile`
+### 3. Get Admin Profile
 
+**Endpoint:** `GET /api/auth/admin/profile`  
 **Authentication:** Required (Admin Token)
 
 **Headers:**
@@ -807,12 +808,9 @@ Authorization: Bearer <admin_token>
       "id": "ADMIN001",
       "email": "admin@uiucash.com",
       "name": "System Administrator",
-      "status": "ACTIVE",
-      "last_login_at": "2026-01-27,
-      "name": "System Administrator",
       "role": "ADMIN",
       "status": "ACTIVE",
-      "last_login_at": "2026-01-16T09:30:00.000Z",
+      "last_login_at": "2026-01-27T09:30:00.000Z",
       "created_at": "2026-01-01T00:00:00.000Z"
     }
   }
@@ -822,6 +820,75 @@ Authorization: Bearer <admin_token>
 **Error Responses:**
 
 - **401 Unauthorized** - Invalid or missing token
+
+---
+
+### 4. Admin Logout
+
+**Endpoint:** `POST /api/auth/admin/logout`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Logout successful. All sessions have been terminated."
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+
+---
+
+### 5. Change Admin Password
+
+**Endpoint:** `PUT /api/auth/admin/change-password`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "currentPassword": "OldAdminPass123!",
+  "newPassword": "NewAdminPass456!"
+}
+```
+
+**Field Validations:**
+
+| Field           | Type   | Required | Validation                                              |
+| --------------- | ------ | -------- | ------------------------------------------------------- |
+| currentPassword | string | Yes      | Current admin password                                  |
+| newPassword     | string | Yes      | Min 8 chars, uppercase, lowercase, number, special char |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Password changed successfully"
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid token or incorrect current password
+- **400 Bad Request** - New password doesn't meet requirements
 
 ---
 

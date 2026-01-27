@@ -218,3 +218,67 @@ export const getAdminProfile = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Change Admin Password
+ * PUT /api/auth/admin/change-password
+ */
+export const changeAdminPassword = async (req: Request, res: Response) => {
+  try {
+    const adminId = res.locals.admin?.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!adminId) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "Admin authentication required",
+      });
+    }
+
+    // Validate new password strength
+    const passwordValidation = validatePasswordStrength(newPassword);
+    if (!passwordValidation.isValid) {
+      return sendResponse(res, STATUS_BAD_REQUEST, {
+        message: "New password does not meet requirements",
+        errors: passwordValidation.errors.map((error) => ({
+          field: "newPassword",
+          message: error,
+        })),
+      });
+    }
+
+    const admin = await Admins.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "Admin not found",
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await verifyPassword(
+      currentPassword,
+      admin.password_hash,
+    );
+    if (!isPasswordValid) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    const password_hash = await hashPassword(newPassword);
+
+    // Update password
+    await Admins.updateById(adminId, { password_hash });
+
+    logger.info(`Admin changed password: ${adminId}`);
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Password changed successfully",
+    });
+  } catch (error: any) {
+    logger.error("Change admin password error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred while changing password",
+    });
+  }
+};

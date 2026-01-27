@@ -4,12 +4,14 @@ import {
   adminLogout,
   adminRegister,
   getAdminProfile,
+  changeAdminPassword,
 } from "../controllers/admin.auth.controller";
 import { authenticateAdmin } from "../middleware/auth";
 import validateZodSchema from "../middleware/app/validateZodSchema";
 import {
   adminLoginSchema,
   createAdminSchema,
+  changeAdminPasswordSchema,
 } from "../validators/admin.auth.validator";
 
 const adminAuthRouter = Router();
@@ -50,5 +52,17 @@ adminAuthRouter.post(
  * @access  Private (Admin)
  */
 adminAuthRouter.get("/profile", authenticateAdmin, getAdminProfile);
+
+/**
+ * @route   PUT /api/admin/change-password
+ * @desc    Change admin password
+ * @access  Private (Admin)
+ */
+adminAuthRouter.put(
+  "/change-password",
+  authenticateAdmin,
+  validateZodSchema(changeAdminPasswordSchema, "body"),
+  changeAdminPassword,
+);
 
 export default adminAuthRouter;

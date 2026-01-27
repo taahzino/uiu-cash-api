@@ -4,6 +4,7 @@ import authRouter from "./_authRouter";
 import adminRouter from "./_adminRouter";
 import systemConfigRouter from "./system.config.router";
 import transactionRouter from "./transaction.router";
+import walletRouter from "./wallet.router";
 
 const appRouter = Router();
 
@@ -27,6 +28,9 @@ appRouter.use("/api/admin", adminRouter);
 
 // Transaction routes
 appRouter.use("/api/transactions", transactionRouter);
+
+// Wallet routes
+appRouter.use("/api/wallet", walletRouter);
 
 // System configuration routes
 appRouter.use("/api/config", systemConfigRouter);

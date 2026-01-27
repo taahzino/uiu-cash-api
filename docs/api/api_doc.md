@@ -29,6 +29,7 @@
    - [Get Agent Details](#get-agent-details)
    - [Approve Agent](#approve-agent)
    - [Reject Agent](#reject-agent)
+   - [Get Agent Transactions](#get-agent-transactions)
 6. [Admin - Analytics](#admin-analytics)
    - [Dashboard Analytics](#dashboard-analytics)
    - [Transaction Analytics](#transaction-analytics)
@@ -1829,6 +1830,14 @@ Authorization: Bearer <admin_token>
         "status": "ACTIVE",
         "createdAt": "2026-01-10T08:00:00.000Z"
       },
+      "wallet": {
+        "balance": 50000.0,
+        "availableBalance": 45000.0,
+        "dailyLimit": 100000.0,
+        "monthlyLimit": 500000.0,
+        "dailySpent": 5000.0,
+        "monthlySpent": 25000.0
+      },
       "approver": {
         "id": "ADM001",
         "name": "Admin User",
@@ -1952,6 +1961,70 @@ Authorization: Bearer <admin_token>
 - **400 Bad Request** - Agent is already processed or reason too short
 
 **Note:** Rejecting an agent also updates the user's status to REJECTED.
+
+---
+
+### Get Agent Transactions
+
+Get paginated transaction history for a specific agent.
+
+**Endpoint:** `GET /api/admin/agents/:id/transactions`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Agent ID    |
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default | Description    |
+| --------- | ------ | -------- | ------- | -------------- |
+| page      | number | No       | 1       | Page number    |
+| limit     | number | No       | 20      | Items per page |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Agent transactions retrieved successfully",
+  "data": {
+    "transactions": [
+      {
+        "id": "TXN12345",
+        "transactionId": "TX-20260127-ABCD1234",
+        "type": "CASH_OUT",
+        "amount": 1000.0,
+        "fee": 18.5,
+        "totalAmount": 1018.5,
+        "status": "COMPLETED",
+        "description": "Cash withdrawal",
+        "createdAt": "2026-01-27T10:30:00.000Z",
+        "completedAt": "2026-01-27T10:30:15.000Z"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalItems": 98,
+      "itemsPerPage": 20
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Agent not found
 
 ---
 

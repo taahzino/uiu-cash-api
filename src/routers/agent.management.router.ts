@@ -6,6 +6,7 @@ import {
   rejectAgent,
   getAgentsPaginated,
   getAgentDetails,
+  getAgentTransactions,
 } from "../controllers/agent.management.controller";
 import {
   approveAgentParamsSchema,
@@ -13,6 +14,8 @@ import {
   rejectAgentBodySchema,
   getAgentsPaginatedSchema,
   getAgentDetailsParamsSchema,
+  getAgentTransactionsParamsSchema,
+  getAgentTransactionsQuerySchema,
 } from "../validators/agent.management.validator";
 
 const router = Router();
@@ -64,6 +67,19 @@ router.post(
   validateZodSchema(rejectAgentParamsSchema, "params"),
   validateZodSchema(rejectAgentBodySchema, "body"),
   rejectAgent,
+);
+
+/**
+ * @route GET /api/admin/agents/:id/transactions
+ * @desc Get paginated transaction history for a specific agent
+ * @access Admin only
+ */
+router.get(
+  "/:id/transactions",
+  authenticateAdmin,
+  validateZodSchema(getAgentTransactionsParamsSchema, "params"),
+  validateZodSchema(getAgentTransactionsQuerySchema, "query"),
+  getAgentTransactions,
 );
 
 export default router;

@@ -304,6 +304,12 @@ export const getAgentDetails = async (req: Request, res: Response) => {
     // Get user details
     const user = await Users.findById(agent.user_id);
 
+    // Get wallet details
+    let wallet: any = null;
+    if (user) {
+      wallet = await Wallets.findByUserId(user.id);
+    }
+
     // Get approver details if exists
     let approver: any = null;
     if (agent.approved_by) {
@@ -327,6 +333,16 @@ export const getAgentDetails = async (req: Request, res: Response) => {
                 created_at: user.created_at,
               }
             : null,
+          wallet: wallet
+            ? {
+                balance: wallet.balance,
+                availableBalance: wallet.available_balance,
+                dailyLimit: wallet.daily_limit,
+                monthlyLimit: wallet.monthly_limit,
+                dailySpent: wallet.daily_spent,
+                monthlySpent: wallet.monthly_spent,
+              }
+            : null,
           approver: approver
             ? {
                 id: approver.id,
@@ -341,6 +357,65 @@ export const getAgentDetails = async (req: Request, res: Response) => {
     logger.error("Get agent details error: " + error.message);
     return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
       message: "Failed to retrieve agent details",
+    });
+  }
+};
+
+/**
+ * Get Agent Transactions (Admin)
+ * GET /api/admin/agents/:id/transactions
+ */
+export const getAgentTransactions = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const offset = (pageNum - 1) * limitNum;
+
+    const agent = await Agents.findById(id);
+    if (!agent) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Agent not found",
+      });
+    }
+
+    const { Transactions } = await import("../models/Transactions.model");
+    const transactions = await Transactions.findByUserId(
+      agent.user_id,
+      limitNum,
+      offset,
+    );
+    const total = await Transactions.countByUserId(agent.user_id);
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Agent transactions retrieved successfully",
+      data: {
+        transactions: transactions.map((txn: any) => ({
+          id: txn.id,
+          transactionId: txn.transaction_id,
+          type: txn.type,
+          amount: txn.amount,
+          fee: txn.fee,
+          totalAmount: txn.total_amount,
+          status: txn.status,
+          description: txn.description,
+          createdAt: txn.created_at,
+          completedAt: txn.completed_at,
+        })),
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(total / limitNum),
+          totalItems: total,
+          itemsPerPage: limitNum,
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error("Get agent transactions error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred while fetching agent transactions",
     });
   }
 };

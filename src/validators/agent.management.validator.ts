@@ -32,3 +32,14 @@ export const rejectAgentBodySchema = z.object({
 export const getAgentDetailsParamsSchema = z.object({
   id: idSchema,
 });
+
+// Get agent transactions params validator
+export const getAgentTransactionsParamsSchema = z.object({
+  id: idSchema,
+});
+
+// Get agent transactions query validator
+export const getAgentTransactionsQuerySchema = z.object({
+  page: pageSchema.optional(),
+  limit: limitSchema.optional(),
+});

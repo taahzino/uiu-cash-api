@@ -167,9 +167,9 @@ export class AgentsModel extends BaseModel {
       SELECT * FROM ${this.tableName}
       WHERE status = 'ACTIVE'
       ORDER BY total_commission_earned DESC
-      LIMIT ?
+      LIMIT ${limit}
     `;
-    return await this.executeQuery(sql, [limit]);
+    return await this.executeQuery(sql);
   }
 
   async getTotalCommissions(): Promise<number> {
@@ -188,9 +188,38 @@ export class AgentsModel extends BaseModel {
     return results[0]?.count || 0;
   }
 
-  async count(): Promise<number> {
-    const sql = `SELECT COUNT(*) as count FROM ${this.tableName}`;
-    const results = await this.executeQuery(sql);
+  async count(conditions?: any): Promise<number> {
+    if (!conditions || Object.keys(conditions).length === 0) {
+      const sql = `SELECT COUNT(*) as count FROM ${this.tableName}`;
+      const results = await this.executeQuery(sql);
+      return results[0]?.count || 0;
+    }
+
+    let sql = `SELECT COUNT(*) as count FROM ${this.tableName}`;
+    const params: any[] = [];
+    const whereClauses: string[] = [];
+
+    for (const [key, value] of Object.entries(conditions)) {
+      if (key === "created_at_range" && typeof value === "object") {
+        whereClauses.push(`created_at BETWEEN ? AND ?`);
+        params.push((value as any).start, (value as any).end);
+      } else if (key === "created_at_gte") {
+        whereClauses.push(`created_at >= ?`);
+        params.push(value);
+      } else if (key === "created_at_lte") {
+        whereClauses.push(`created_at <= ?`);
+        params.push(value);
+      } else {
+        whereClauses.push(`${key} = ?`);
+        params.push(value);
+      }
+    }
+
+    if (whereClauses.length > 0) {
+      sql += ` WHERE ${whereClauses.join(" AND ")}`;
+    }
+
+    const results = await this.executeQuery(sql, params);
     return results[0]?.count || 0;
   }
 }

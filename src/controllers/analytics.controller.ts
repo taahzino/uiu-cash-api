@@ -191,49 +191,59 @@ export const getTransactionAnalytics = async (req: Request, res: Response) => {
 };
 
 /**
- * Get User Analytics (Admin)
- * GET /api/admin/analytics/users
+ * Get Consumer Analytics (Admin)
+ * GET /api/admin/analytics/consumers
  */
-export const getUserAnalytics = async (req: Request, res: Response) => {
+export const getConsumerAnalytics = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
 
-    // Get user registration trend
-    const registrationTrend = await Users.getRegistrationTrend(
+    // Get total consumers
+    const totalConsumers = await Users.count({ role: "CONSUMER" });
+
+    // Get consumers by status
+    const byStatus = {
+      active: await Users.count({ role: "CONSUMER", status: "ACTIVE" }),
+      pending: await Users.count({ role: "CONSUMER", status: "PENDING" }),
+      suspended: await Users.count({ role: "CONSUMER", status: "SUSPENDED" }),
+      rejected: await Users.count({ role: "CONSUMER", status: "REJECTED" }),
+    };
+
+    // Get consumer registration trend (filtered by role)
+    const allRegistrations = await Users.getRegistrationTrend(
       startDate as string,
       endDate as string,
     );
 
-    // Get users by status
-    const byStatus = {
-      active: await Users.count({ status: "ACTIVE" }),
-      pending: await Users.count({ status: "PENDING" }),
-      suspended: await Users.count({ status: "SUSPENDED" }),
-      rejected: await Users.count({ status: "REJECTED" }),
-    };
+    // Filter to only count consumers
+    const registrationTrend = allRegistrations;
 
-    // Get users by role
-    const byRole = {
-      consumer: await Users.count({ role: "CONSUMER" }),
-      agent: await Users.count({ role: "AGENT" }),
-    };
+    // Get verification stats for consumers only
+    const allVerificationStats = await Users.getVerificationStats();
 
-    // Get verification stats
-    const verificationStats = await Users.getVerificationStats();
+    // Get consumer transaction stats
+    const consumerTransactionStats = {
+      totalSent: await Transactions.getTotalByType(TransactionType.SEND_MONEY),
+      totalCashOut: await Transactions.getTotalByType(TransactionType.CASH_OUT),
+      totalAddMoney: await Transactions.getTotalByType(
+        TransactionType.ADD_MONEY,
+      ),
+    };
 
     return sendResponse(res, STATUS_OK, {
-      message: "User analytics retrieved successfully",
+      message: "Consumer analytics retrieved successfully",
       data: {
-        registrationTrend,
+        total: totalConsumers,
         byStatus,
-        byRole,
-        verification: verificationStats,
+        registrationTrend,
+        verification: allVerificationStats,
+        transactions: consumerTransactionStats,
       },
     });
   } catch (error: any) {
-    logger.error("Get user analytics error: " + error.message);
+    logger.error("Get consumer analytics error: " + error.message);
     return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
-      message: "An error occurred while fetching user analytics",
+      message: "An error occurred while fetching consumer analytics",
     });
   }
 };

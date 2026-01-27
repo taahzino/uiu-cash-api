@@ -12,31 +12,74 @@ import {
 } from "../utilities/response";
 
 /**
- * Get All Consumers (Admin)
- * GET /api/admin/consumers
+ * Get Consumers Paginated with Search and Filters (Admin)
+ * POST /api/admin/consumers/list
  */
-export const getAllConsumers = async (req: Request, res: Response) => {
+export const getConsumersPaginated = async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 20, status, role, search } = req.query;
+    const { offset, limit, search, startDate, endDate, status } = req.body;
+    console.log("[CONSUMER PAGINATED] Request body:", {
+      offset,
+      limit,
+      search,
+      startDate,
+      endDate,
+      status,
+    });
 
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
-    const offset = (pageNum - 1) * limitNum;
-
-    let conditions: any = {};
+    let conditions: any = { role: "CONSUMER" };
     if (status) conditions.status = status;
-    if (role) conditions.role = role;
+
+    // Add date range filter if provided
+    if (startDate && endDate) {
+      conditions.created_at_range = { start: startDate, end: endDate };
+    } else if (startDate) {
+      conditions.created_at_gte = startDate;
+    } else if (endDate) {
+      conditions.created_at_lte = endDate;
+    }
 
     let users;
     let total;
 
-    if (search) {
-      // Full-text search
-      users = await Users.searchUsers(search as string, limitNum, offset);
-      total = users.length; // Approximate
+    if (search && search.trim()) {
+      // Search by name, email, or phone
+      console.log("[CONSUMER PAGINATED] Calling searchUsers with:", {
+        search,
+        limit,
+        offset,
+      });
+      users = await Users.searchUsers(search, limit, offset);
+      console.log(
+        "[CONSUMER PAGINATED] Search returned:",
+        users.length,
+        "users",
+      );
+      // Filter by role and conditions after search
+      users = users.filter((user: any) => {
+        if (user.role !== "CONSUMER") return false;
+        if (status && user.status !== status) return false;
+        if (startDate && new Date(user.created_at) < new Date(startDate))
+          return false;
+        if (endDate && new Date(user.created_at) > new Date(endDate))
+          return false;
+        return true;
+      });
+      total = users.length;
     } else {
-      users = await Users.findAll(conditions, limitNum, offset);
+      console.log("[CONSUMER PAGINATED] Calling findAll with:", {
+        conditions,
+        limit,
+        offset,
+      });
+      users = await Users.findAll(conditions, limit, offset);
       total = await Users.count(conditions);
+      console.log(
+        "[CONSUMER PAGINATED] FindAll returned:",
+        users.length,
+        "users, total:",
+        total,
+      );
     }
 
     // Get wallet info for each user
@@ -56,26 +99,27 @@ export const getAllConsumers = async (req: Request, res: Response) => {
           lastLoginAt: user.last_login_at,
           createdAt: user.created_at,
           walletBalance: wallet?.balance || 0,
+          walletAvailableBalance: wallet?.available_balance || 0,
         };
       }),
     );
 
     return sendResponse(res, STATUS_OK, {
-      message: "Users retrieved successfully",
+      message: "Consumers retrieved successfully",
       data: {
-        users: usersWithWallets,
+        consumers: usersWithWallets,
         pagination: {
-          currentPage: pageNum,
-          totalPages: Math.ceil(total / limitNum),
-          totalItems: total,
-          itemsPerPage: limitNum,
+          offset,
+          limit,
+          total,
+          hasMore: offset + limit < total,
         },
       },
     });
   } catch (error: any) {
-    logger.error("Get all users error: " + error.message);
+    logger.error("Get consumers paginated error: " + error.message);
     return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
-      message: "An error occurred while fetching users",
+      message: "An error occurred while fetching consumers",
     });
   }
 };
@@ -205,56 +249,6 @@ export const updateConsumerStatus = async (req: Request, res: Response) => {
     logger.error("Update user status error: " + error.message);
     return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
       message: "An error occurred while updating user status",
-    });
-  }
-};
-
-/**
- * Search Consumers (Admin)
- * GET /api/admin/consumers/search
- */
-export const searchConsumers = async (req: Request, res: Response) => {
-  try {
-    const { query, limit = 20 } = req.query;
-
-    if (!query) {
-      return sendResponse(res, STATUS_BAD_REQUEST, {
-        message: "Search query is required",
-      });
-    }
-
-    const users = await Users.searchUsers(
-      query as string,
-      parseInt(limit as string),
-    );
-
-    const usersWithWallets = await Promise.all(
-      users.map(async (user: any) => {
-        const wallet = await Wallets.findByUserId(user.id);
-        return {
-          id: user.id,
-          email: user.email,
-          phone: user.phone,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          role: user.role,
-          status: user.status,
-          walletBalance: wallet?.balance || 0,
-        };
-      }),
-    );
-
-    return sendResponse(res, STATUS_OK, {
-      message: "Search results",
-      data: {
-        users: usersWithWallets,
-        count: usersWithWallets.length,
-      },
-    });
-  } catch (error: any) {
-    logger.error("Search users error: " + error.message);
-    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
-      message: "An error occurred while searching users",
     });
   }
 };

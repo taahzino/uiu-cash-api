@@ -205,12 +205,21 @@ export class UsersModel extends BaseModel {
     limit: number = 20,
     offset: number = 0,
   ): Promise<IUser[]> {
+    console.log("[USERS.searchUsers] Input:", {
+      searchTerm,
+      limit,
+      offset,
+      limitType: typeof limit,
+      offsetType: typeof offset,
+    });
     const sql = `
       SELECT * FROM ${this.tableName}
       WHERE MATCH(first_name, last_name, email) AGAINST(? IN NATURAL LANGUAGE MODE)
-      LIMIT ? OFFSET ?
+      LIMIT ${limit} OFFSET ${offset}
     `;
-    return await this.executeQuery(sql, [searchTerm, limit, offset]);
+    console.log("[USERS.searchUsers] SQL:", sql);
+    console.log("[USERS.searchUsers] Params:", [searchTerm]);
+    return await this.executeQuery(sql, [searchTerm]);
   }
 
   /**

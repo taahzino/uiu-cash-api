@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   getDashboardAnalytics,
   getTransactionAnalytics,
-  getUserAnalytics,
+  getConsumerAnalytics,
   getAgentAnalytics,
   getRevenueAnalytics,
 } from "../controllers/analytics.controller";
@@ -15,7 +15,7 @@ router.use(authenticateAdmin);
 
 router.get("/dashboard", getDashboardAnalytics);
 router.get("/transactions", getTransactionAnalytics);
-router.get("/users", getUserAnalytics);
+router.get("/consumers", getConsumerAnalytics);
 router.get("/agents", getAgentAnalytics);
 router.get("/revenue", getRevenueAnalytics);
 

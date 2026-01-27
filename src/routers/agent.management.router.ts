@@ -2,45 +2,31 @@ import { Router } from "express";
 import { authenticateAdmin } from "../middleware/auth";
 import validateZodSchema from "../middleware/app/validateZodSchema";
 import {
-  getPendingAgents,
   approveAgent,
   rejectAgent,
-  getAllAgents,
+  getAgentsPaginated,
   getAgentDetails,
 } from "../controllers/agent.management.controller";
 import {
   approveAgentParamsSchema,
   rejectAgentParamsSchema,
   rejectAgentBodySchema,
-  getAllAgentsQuerySchema,
+  getAgentsPaginatedSchema,
   getAgentDetailsParamsSchema,
-  getPendingAgentsQuerySchema,
 } from "../validators/agent.management.validator";
 
 const router = Router();
 
 /**
- * @route GET /api/admin/agents/pending
- * @desc Get all pending agents awaiting approval
+ * @route POST /api/admin/agents/list
+ * @desc Get paginated agents with search and filters
  * @access Admin only
  */
-router.get(
-  "/pending",
+router.post(
+  "/list",
   authenticateAdmin,
-  validateZodSchema(getPendingAgentsQuerySchema, "query"),
-  getPendingAgents,
-);
-
-/**
- * @route GET /api/admin/agents
- * @desc Get all agents with optional status filter
- * @access Admin only
- */
-router.get(
-  "/",
-  authenticateAdmin,
-  validateZodSchema(getAllAgentsQuerySchema, "query"),
-  getAllAgents,
+  validateZodSchema(getAgentsPaginatedSchema, "body"),
+  getAgentsPaginated,
 );
 
 /**

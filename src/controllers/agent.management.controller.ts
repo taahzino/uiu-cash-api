@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import logger from "../config/_logger";
 import { Agents, AgentStatus } from "../models/Agents.model";
 import { Users, UserStatus } from "../models/Users.model";
+import { Wallets } from "../models/Wallets.model";
 import {
   sendResponse,
   STATUS_BAD_REQUEST,
@@ -9,6 +10,127 @@ import {
   STATUS_NOT_FOUND,
   STATUS_OK,
 } from "../utilities/response";
+
+/**
+ * Get Agents Paginated with Search and Filters (Admin)
+ * POST /api/admin/agents/list
+ */
+export const getAgentsPaginated = async (req: Request, res: Response) => {
+  try {
+    const { offset, limit, search, startDate, endDate, status } = req.body;
+    console.log("[AGENT PAGINATED] Request body:", {
+      offset,
+      limit,
+      search,
+      startDate,
+      endDate,
+      status,
+    });
+
+    let conditions: any = {};
+    if (status) conditions.status = status;
+
+    // Add date range filter if provided
+    if (startDate && endDate) {
+      conditions.created_at_range = { start: startDate, end: endDate };
+    } else if (startDate) {
+      conditions.created_at_gte = startDate;
+    } else if (endDate) {
+      conditions.created_at_lte = endDate;
+    }
+
+    let agents;
+    let total;
+
+    if (search && search.trim()) {
+      console.log("[AGENT PAGINATED] Search mode:", search);
+      // Search by agent code or business name
+      agents = await Agents.findAll({}, 1000, 0); // Get all first
+      agents = agents.filter((agent: any) => {
+        const matchesSearch =
+          agent.agent_code?.toLowerCase().includes(search.toLowerCase()) ||
+          agent.business_name?.toLowerCase().includes(search.toLowerCase());
+        if (!matchesSearch) return false;
+        if (status && agent.status !== status) return false;
+        if (startDate && new Date(agent.created_at) < new Date(startDate))
+          return false;
+        if (endDate && new Date(agent.created_at) > new Date(endDate))
+          return false;
+        return true;
+      });
+      total = agents.length;
+      agents = agents.slice(offset, offset + limit);
+      console.log(
+        "[AGENT PAGINATED] Filtered agents:",
+        agents.length,
+        "total:",
+        total,
+      );
+    } else {
+      console.log("[AGENT PAGINATED] Normal mode with conditions:", conditions);
+      agents = await Agents.findAll(conditions, limit, offset);
+      total = await Agents.count(conditions);
+      console.log(
+        "[AGENT PAGINATED] Found agents:",
+        agents.length,
+        "total:",
+        total,
+      );
+    }
+
+    // Get user and wallet details for each agent
+    const agentsWithDetails = await Promise.all(
+      agents.map(async (agent: any) => {
+        const user = await Users.findById(agent.user_id);
+        const wallet = user ? await Wallets.findByUserId(user.id) : null;
+        return {
+          id: agent.id,
+          userId: agent.user_id,
+          agentCode: agent.agent_code,
+          businessName: agent.business_name,
+          businessAddress: agent.business_address,
+          status: agent.status,
+          totalCommissionEarned: agent.total_commission_earned,
+          createdAt: agent.created_at,
+          approvedAt: agent.approved_at,
+          user: user
+            ? {
+                email: user.email,
+                phone: user.phone,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                status: user.status,
+              }
+            : null,
+          wallet: wallet
+            ? {
+                balance: wallet.balance,
+                availableBalance: wallet.available_balance,
+              }
+            : null,
+        };
+      }),
+    );
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Agents retrieved successfully",
+      data: {
+        agents: agentsWithDetails,
+        pagination: {
+          offset,
+          limit,
+          total,
+          hasMore: offset + limit < total,
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error("Get agents paginated error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred while fetching agents",
+    });
+  }
+};
 
 /**
  * Get All Pending Agents (Admin)
@@ -160,71 +282,6 @@ export const rejectAgent = async (req: Request, res: Response) => {
     logger.error("Reject agent error: " + error.message);
     return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
       message: "Failed to reject agent",
-    });
-  }
-};
-
-/**
- * Get All Agents (Admin)
- * GET /api/admin/agents
- */
-export const getAllAgents = async (req: Request, res: Response) => {
-  try {
-    const { status, page = "1", limit = "20" } = req.query;
-
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
-    const offset = (pageNum - 1) * limitNum;
-
-    let agents;
-    let total;
-
-    if (status && Object.values(AgentStatus).includes(status as AgentStatus)) {
-      agents = await Agents.findAll({
-        where: { status: status as AgentStatus },
-        limit: limitNum,
-        offset,
-      });
-      total = await Agents.countByStatus(status as AgentStatus);
-    } else {
-      agents = await Agents.findAll({ limit: limitNum, offset });
-      total = await Agents.count();
-    }
-
-    // Get user details for each agent
-    const agentsWithUsers = await Promise.all(
-      agents.map(async (agent: any) => {
-        const user = await Users.findById(agent.user_id);
-        return {
-          ...agent,
-          user: user
-            ? {
-                email: user.email,
-                phone: user.phone,
-                first_name: user.first_name,
-                last_name: user.last_name,
-              }
-            : null,
-        };
-      }),
-    );
-
-    return sendResponse(res, STATUS_OK, {
-      message: "Agents retrieved successfully",
-      data: {
-        agents: agentsWithUsers,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          totalPages: Math.ceil(total / limitNum),
-        },
-      },
-    });
-  } catch (error: any) {
-    logger.error("Get all agents error: " + error.message);
-    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
-      message: "Failed to retrieve agents",
     });
   }
 };

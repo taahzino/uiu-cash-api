@@ -67,11 +67,19 @@ export abstract class BaseModel {
     limit?: number,
     offset?: number,
   ): Promise<any[]> {
+    console.log("[BaseModel.findAll] Input:", {
+      tableName: this.tableName,
+      conditions,
+      limit,
+      offset,
+      limitType: typeof limit,
+      offsetType: typeof offset,
+    });
     let sql = `SELECT * FROM ${this.tableName}`;
     const params: any[] = [];
     let hasWhere = false;
 
-    if (conditions) {
+    if (conditions && Object.keys(conditions).length > 0) {
       const conditionsArray = Object.entries(conditions).map(([key, value]) => {
         params.push(value);
         return `${key} = ?`;
@@ -81,15 +89,15 @@ export abstract class BaseModel {
     }
 
     if (limit) {
-      sql += ` LIMIT ?`;
-      params.push(limit);
+      sql += ` LIMIT ${limit}`;
     }
 
     if (offset) {
-      sql += ` OFFSET ?`;
-      params.push(offset);
+      sql += ` OFFSET ${offset}`;
     }
 
+    console.log("[BaseModel.findAll] Final SQL:", sql);
+    console.log("[BaseModel.findAll] Params:", params);
     return await this.executeQuery(sql, params);
   }
 

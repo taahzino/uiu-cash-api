@@ -2,21 +2,15 @@ import { z } from "zod";
 import { idSchema, pageSchema, limitSchema } from "./utility.validator";
 
 /**
- * Get Consumers Query Schema (with pagination and filters)
+ * Get Consumers Paginated Schema (POST body)
  */
-export const getConsumersSchema = z.object({
-  page: pageSchema,
-  limit: limitSchema,
+export const getConsumersPaginatedSchema = z.object({
+  offset: z.number().int().min(0, "Offset must be a non-negative integer"),
+  limit: z.number().int().min(1).max(100, "Limit must be between 1 and 100"),
+  search: z.string().optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED", "LOCKED"]).optional(),
-  role: z.enum(["CONSUMER", "AGENT"]).optional(),
-});
-
-/**
- * Search Consumers Schema
- */
-export const searchConsumersSchema = z.object({
-  q: z.string().min(1, "Search query is required"),
-  limit: z.string().regex(/^\d+$/).optional().default("10"),
 });
 
 /**

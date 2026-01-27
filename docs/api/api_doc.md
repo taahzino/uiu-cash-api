@@ -19,8 +19,24 @@
    - [Cash Out](#cash-out)
    - [Transaction History](#transaction-history)
    - [Transaction Details](#transaction-details)
-4. [Common Patterns](#common-patterns)
-5. [Error Responses](#error-responses)
+4. [Admin - Consumer Management](#admin-consumer-management)
+   - [Get Paginated Consumers](#get-paginated-consumers)
+   - [Get Consumer Details](#get-consumer-details)
+   - [Update Consumer Status](#update-consumer-status)
+   - [Get Consumer Transactions](#get-consumer-transactions)
+5. [Admin - Agent Management](#admin-agent-management)
+   - [Get Paginated Agents](#get-paginated-agents)
+   - [Get Agent Details](#get-agent-details)
+   - [Approve Agent](#approve-agent)
+   - [Reject Agent](#reject-agent)
+6. [Admin - Analytics](#admin-analytics)
+   - [Dashboard Analytics](#dashboard-analytics)
+   - [Transaction Analytics](#transaction-analytics)
+   - [Consumer Analytics](#consumer-analytics)
+   - [Agent Analytics](#agent-analytics)
+   - [Revenue Analytics](#revenue-analytics)
+7. [Common Patterns](#common-patterns)
+8. [Error Responses](#error-responses)
 
 ---
 
@@ -1393,6 +1409,866 @@ GET /api/transactions/T1A2B3C4
 
 - Users can only view their own transactions (sent or received)
 - Admins can view all transactions
+
+---
+
+## Admin - Consumer Management
+
+Base URL: `/api/admin/consumers`
+
+All consumer management endpoints require admin authentication.
+
+### Get Paginated Consumers
+
+Get a paginated list of consumers with advanced search and filtering capabilities.
+
+**Endpoint:** `POST /api/admin/consumers/list`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "offset": 0,
+  "limit": 20,
+  "search": "john",
+  "startDate": "2026-01-01T00:00:00.000Z",
+  "endDate": "2026-01-28T23:59:59.999Z",
+  "status": "ACTIVE"
+}
+```
+
+**Field Validations:**
+
+| Field     | Type   | Required | Validation                          |
+| --------- | ------ | -------- | ----------------------------------- |
+| offset    | number | Yes      | Min: 0                              |
+| limit     | number | Yes      | Min: 1, Max: 100                    |
+| search    | string | No       | Searches name, email, phone         |
+| startDate | string | No       | ISO 8601 datetime                   |
+| endDate   | string | No       | ISO 8601 datetime                   |
+| status    | enum   | No       | ACTIVE, INACTIVE, SUSPENDED, LOCKED |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Consumers retrieved successfully",
+  "data": {
+    "consumers": [
+      {
+        "id": "U4R2Q9VG",
+        "email": "john.doe@example.com",
+        "phone": "01712345678",
+        "firstName": "John",
+        "lastName": "Doe",
+        "role": "CONSUMER",
+        "status": "ACTIVE",
+        "emailVerified": true,
+        "phoneVerified": true,
+        "lastLoginAt": "2026-01-27T10:30:00.000Z",
+        "createdAt": "2026-01-15T08:00:00.000Z",
+        "walletBalance": 5000.0,
+        "walletAvailableBalance": 4500.0
+      }
+    ],
+    "pagination": {
+      "offset": 0,
+      "limit": 20,
+      "total": 150,
+      "hasMore": true
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **400 Bad Request** - Invalid pagination or filter parameters
+
+---
+
+### Get Consumer Details
+
+Get detailed information about a specific consumer including wallet and transaction history.
+
+**Endpoint:** `GET /api/admin/consumers/:id`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Consumer ID |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "User details retrieved successfully",
+  "data": {
+    "user": {
+      "id": "U4R2Q9VG",
+      "email": "john.doe@example.com",
+      "phone": "01712345678",
+      "firstName": "John",
+      "lastName": "Doe",
+      "role": "CONSUMER",
+      "status": "ACTIVE",
+      "dateOfBirth": "1995-05-15",
+      "nidNumber": "1234567890",
+      "emailVerified": true,
+      "phoneVerified": true,
+      "lastLoginAt": "2026-01-27T10:30:00.000Z",
+      "createdAt": "2026-01-15T08:00:00.000Z",
+      "updatedAt": "2026-01-27T10:30:00.000Z"
+    },
+    "wallet": {
+      "balance": 5000.0,
+      "availableBalance": 4500.0,
+      "pendingBalance": 500.0,
+      "currency": "BDT",
+      "dailyLimit": 50000.0,
+      "monthlyLimit": 200000.0,
+      "dailySpent": 2000.0,
+      "monthlySpent": 15000.0,
+      "lastTransactionAt": "2026-01-27T09:45:00.000Z"
+    },
+    "recentTransactions": [
+      {
+        "id": "9W2QRKXY",
+        "transactionId": "TXN-20260127-847345",
+        "type": "SEND_MONEY",
+        "amount": 500.0,
+        "fee": 5.0,
+        "status": "COMPLETED",
+        "createdAt": "2026-01-27T09:45:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Consumer not found
+
+---
+
+### Update Consumer Status
+
+Update a consumer's account status.
+
+**Endpoint:** `PATCH /api/admin/consumers/:id/status`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Consumer ID |
+
+**Request Body:**
+
+```json
+{
+  "status": "SUSPENDED"
+}
+```
+
+**Field Validations:**
+
+| Field  | Type | Required | Validation                  |
+| ------ | ---- | -------- | --------------------------- |
+| status | enum | Yes      | ACTIVE, SUSPENDED, REJECTED |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "User status updated successfully",
+  "data": {
+    "user": {
+      "id": "U4R2Q9VG",
+      "email": "john.doe@example.com",
+      "status": "SUSPENDED"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Consumer not found
+- **400 Bad Request** - Invalid status value
+
+---
+
+### Get Consumer Transactions
+
+Get paginated transaction history for a specific consumer.
+
+**Endpoint:** `GET /api/admin/consumers/:id/transactions`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Consumer ID |
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default | Description    |
+| --------- | ------ | -------- | ------- | -------------- |
+| page      | number | No       | 1       | Page number    |
+| limit     | number | No       | 20      | Items per page |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "User transactions retrieved successfully",
+  "data": {
+    "transactions": [
+      {
+        "id": "9W2QRKXY",
+        "transactionId": "TXN-20260127-847345",
+        "type": "SEND_MONEY",
+        "amount": 500.0,
+        "fee": 5.0,
+        "totalAmount": 505.0,
+        "status": "COMPLETED",
+        "description": "Money sent to Jane Doe",
+        "createdAt": "2026-01-27T09:45:00.000Z",
+        "completedAt": "2026-01-27T09:45:01.000Z"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalItems": 98,
+      "itemsPerPage": 20
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Consumer not found
+
+---
+
+## Admin - Agent Management
+
+Base URL: `/api/admin/agents`
+
+All agent management endpoints require admin authentication.
+
+### Get Paginated Agents
+
+Get a paginated list of agents with advanced search and filtering capabilities.
+
+**Endpoint:** `POST /api/admin/agents/list`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "offset": 0,
+  "limit": 20,
+  "search": "AG1234567",
+  "startDate": "2026-01-01T00:00:00.000Z",
+  "endDate": "2026-01-28T23:59:59.999Z",
+  "status": "ACTIVE"
+}
+```
+
+**Field Validations:**
+
+| Field     | Type   | Required | Validation                           |
+| --------- | ------ | -------- | ------------------------------------ |
+| offset    | number | Yes      | Min: 0                               |
+| limit     | number | Yes      | Min: 1, Max: 100                     |
+| search    | string | No       | Searches agent code, business name   |
+| startDate | string | No       | ISO 8601 datetime                    |
+| endDate   | string | No       | ISO 8601 datetime                    |
+| status    | enum   | No       | PENDING, ACTIVE, SUSPENDED, REJECTED |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Agents retrieved successfully",
+  "data": {
+    "agents": [
+      {
+        "id": "AGT001",
+        "userId": "U9X5K2LM",
+        "agentCode": "AG1234567",
+        "businessName": "Quick Cash Point",
+        "businessAddress": "123 Main Street, Dhaka-1205",
+        "status": "ACTIVE",
+        "totalCommissionEarned": 5000.0,
+        "createdAt": "2026-01-10T08:00:00.000Z",
+        "approvedAt": "2026-01-11T14:30:00.000Z",
+        "user": {
+          "email": "agent@example.com",
+          "phone": "01812345678",
+          "firstName": "Ahmed",
+          "lastName": "Rahman",
+          "status": "ACTIVE"
+        },
+        "wallet": {
+          "balance": 25000.0,
+          "availableBalance": 24500.0
+        }
+      }
+    ],
+    "pagination": {
+      "offset": 0,
+      "limit": 20,
+      "total": 45,
+      "hasMore": true
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **400 Bad Request** - Invalid pagination or filter parameters
+
+---
+
+### Get Agent Details
+
+Get detailed information about a specific agent including user details and approval status.
+
+**Endpoint:** `GET /api/admin/agents/:id`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Agent ID    |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Agent details retrieved successfully",
+  "data": {
+    "agent": {
+      "id": "AGT001",
+      "userId": "U9X5K2LM",
+      "agentCode": "AG1234567",
+      "businessName": "Quick Cash Point",
+      "businessAddress": "123 Main Street, Dhaka-1205",
+      "status": "ACTIVE",
+      "totalCommissionEarned": 5000.0,
+      "createdAt": "2026-01-10T08:00:00.000Z",
+      "approvedAt": "2026-01-11T14:30:00.000Z",
+      "approvedBy": "ADM001",
+      "user": {
+        "id": "U9X5K2LM",
+        "email": "agent@example.com",
+        "phone": "01812345678",
+        "firstName": "Ahmed",
+        "lastName": "Rahman",
+        "status": "ACTIVE",
+        "createdAt": "2026-01-10T08:00:00.000Z"
+      },
+      "approver": {
+        "id": "ADM001",
+        "name": "Admin User",
+        "email": "admin@uiucash.com"
+      }
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Agent not found
+
+---
+
+### Approve Agent
+
+Approve a pending agent application and activate their account.
+
+**Endpoint:** `POST /api/admin/agents/:id/approve`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Agent ID    |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Agent approved successfully",
+  "data": {
+    "agent": {
+      "id": "AGT001",
+      "agentCode": "AG1234567",
+      "status": "ACTIVE",
+      "approvedAt": "2026-01-27T10:30:00.000Z",
+      "approvedBy": "ADM001"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Agent not found
+- **400 Bad Request** - Agent is already processed (not pending)
+
+**Note:** Approving an agent also updates the user's status to ACTIVE.
+
+---
+
+### Reject Agent
+
+Reject a pending agent application with a reason.
+
+**Endpoint:** `POST /api/admin/agents/:id/reject`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Agent ID    |
+
+**Request Body:**
+
+```json
+{
+  "reason": "Incomplete business documentation provided. Please resubmit with proper business license."
+}
+```
+
+**Field Validations:**
+
+| Field  | Type   | Required | Validation        |
+| ------ | ------ | -------- | ----------------- |
+| reason | string | Yes      | Min 10 characters |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Agent rejected successfully",
+  "data": {
+    "agent": {
+      "id": "AGT001",
+      "agentCode": "AG1234567",
+      "status": "REJECTED",
+      "rejectedAt": "2026-01-27T10:30:00.000Z",
+      "rejectedBy": "ADM001",
+      "rejectionReason": "Incomplete business documentation provided. Please resubmit with proper business license."
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Agent not found
+- **400 Bad Request** - Agent is already processed or reason too short
+
+**Note:** Rejecting an agent also updates the user's status to REJECTED.
+
+---
+
+## Admin - Analytics
+
+Base URL: `/api/admin/analytics`
+
+All analytics endpoints require admin authentication.
+
+### Dashboard Analytics
+
+Get high-level overview statistics for the admin dashboard.
+
+**Endpoint:** `GET /api/admin/analytics/dashboard`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Dashboard analytics retrieved successfully",
+  "data": {
+    "users": {
+      "total": 1250,
+      "active": 1100,
+      "inactive": 50,
+      "suspended": 100
+    },
+    "agents": {
+      "total": 45,
+      "active": 38,
+      "pending": 5,
+      "rejected": 2
+    },
+    "transactions": {
+      "total": 15420,
+      "today": 234,
+      "thisWeek": 1567,
+      "thisMonth": 6890
+    },
+    "revenue": {
+      "total": 125000.0,
+      "today": 2500.0,
+      "thisWeek": 15000.0,
+      "thisMonth": 58000.0
+    },
+    "platformWallet": {
+      "balance": 999800.0,
+      "totalBonusesGiven": 200.0,
+      "totalRevenueCollected": 125000.0
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+---
+
+### Transaction Analytics
+
+Get detailed transaction analytics and trends.
+
+**Endpoint:** `GET /api/admin/analytics/transactions`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default     | Description           |
+| --------- | ------ | -------- | ----------- | --------------------- |
+| startDate | string | No       | 30 days ago | Start date (ISO 8601) |
+| endDate   | string | No       | Today       | End date (ISO 8601)   |
+| groupBy   | string | No       | day         | day, week, month      |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Transaction analytics retrieved successfully",
+  "data": {
+    "byType": {
+      "SEND_MONEY": { "count": 5420, "volume": 2500000.0 },
+      "ADD_MONEY": { "count": 3200, "volume": 5000000.0 },
+      "CASH_OUT": { "count": 2100, "volume": 1800000.0 },
+      "BANK_TRANSFER": { "count": 450, "volume": 1200000.0 }
+    },
+    "byStatus": {
+      "COMPLETED": 14800,
+      "PENDING": 420,
+      "FAILED": 200
+    },
+    "timeline": [
+      {
+        "date": "2026-01-27",
+        "count": 234,
+        "volume": 125000.0
+      }
+    ],
+    "averageTransactionSize": 680.45,
+    "totalFees": 15420.0
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+---
+
+### Consumer Analytics
+
+Get consumer-specific analytics including registration trends, status breakdown, and transaction statistics.
+
+**Endpoint:** `GET /api/admin/analytics/consumers`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Description                  |
+| --------- | ------ | -------- | ---------------------------- |
+| startDate | string | No       | Start date (ISO 8601 format) |
+| endDate   | string | No       | End date (ISO 8601 format)   |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Consumer analytics retrieved successfully",
+  "data": {
+    "total": 1423,
+    "byStatus": {
+      "active": 1350,
+      "pending": 20,
+      "suspended": 8,
+      "rejected": 45
+    },
+    "registrationTrend": [
+      {
+        "date": "2026-01-27",
+        "count": 38
+      },
+      {
+        "date": "2026-01-26",
+        "count": 42
+      }
+    ],
+    "verification": {
+      "total": 1523,
+      "emailVerified": 1400,
+      "phoneVerified": 1350,
+      "bothVerified": 1300
+    },
+    "transactions": {
+      "totalSent": {
+        "count": 25000,
+        "amount": 12500000
+      },
+      "totalCashOut": {
+        "count": 8000,
+        "amount": 4000000
+      },
+      "totalAddMoney": {
+        "count": 10000,
+        "amount": 5000000
+      }
+    }
+  }
+}
+```
+
+**Response Fields:**
+
+| Field             | Type   | Description                                    |
+| ----------------- | ------ | ---------------------------------------------- |
+| total             | number | Total number of consumers                      |
+| byStatus          | object | Consumer count by status (active/pending/etc.) |
+| registrationTrend | array  | Daily consumer registration count              |
+| verification      | object | Email and phone verification statistics        |
+| transactions      | object | Consumer transaction totals by type            |
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+---
+
+### Agent Analytics
+
+Get agent performance and commission analytics.
+
+**Endpoint:** `GET /api/admin/analytics/agents`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Agent analytics retrieved successfully",
+  "data": {
+    "totalAgents": 45,
+    "activeAgents": 38,
+    "pendingApprovals": 5,
+    "totalCommissionsPaid": 45000.0,
+    "commissionsThisMonth": 12500.0,
+    "topAgents": [
+      {
+        "agentCode": "AG1234567",
+        "businessName": "Quick Cash Point",
+        "totalCommission": 5000.0,
+        "transactionsCount": 250
+      }
+    ],
+    "agentGrowth": [
+      {
+        "date": "2026-01-27",
+        "newAgents": 2,
+        "totalAgents": 45
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+---
+
+### Revenue Analytics
+
+Get platform revenue breakdown and trends.
+
+**Endpoint:** `GET /api/admin/analytics/revenue`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default     | Description           |
+| --------- | ------ | -------- | ----------- | --------------------- |
+| startDate | string | No       | 30 days ago | Start date (ISO 8601) |
+| endDate   | string | No       | Today       | End date (ISO 8601)   |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Revenue analytics retrieved successfully",
+  "data": {
+    "totalRevenue": 125000.0,
+    "revenueToday": 2500.0,
+    "revenueThisWeek": 15000.0,
+    "revenueThisMonth": 58000.0,
+    "bySource": {
+      "SEND_MONEY_FEE": 45000.0,
+      "CASH_OUT_FEE": 38000.0,
+      "BANK_TRANSFER_FEE": 15000.0,
+      "ADD_MONEY_DEPOSIT": 5000000.0
+    },
+    "revenueTimeline": [
+      {
+        "date": "2026-01-27",
+        "revenue": 2500.0,
+        "fees": 850.0,
+        "commissions": 650.0
+      }
+    ],
+    "expenses": {
+      "totalCommissions": 45000.0,
+      "totalBonuses": 200.0
+    },
+    "netRevenue": 79800.0
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
 
 ---
 

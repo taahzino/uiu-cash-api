@@ -78,7 +78,7 @@ export class LedgersModel extends BaseModel {
   async findByWalletId(
     walletId: string,
     limit: number = 100,
-    offset: number = 0
+    offset: number = 0,
   ): Promise<ILedger[]> {
     const sql = `
       SELECT * FROM ${this.tableName}
@@ -88,6 +88,15 @@ export class LedgersModel extends BaseModel {
     `;
     const results = await this.executeQuery(sql, [walletId, limit, offset]);
     return Array.isArray(results) ? results : [];
+  }
+
+  async findByTransactionAndWallet(
+    transactionId: string,
+    walletId: string,
+  ): Promise<ILedger | null> {
+    const sql = `SELECT * FROM ${this.tableName} WHERE transaction_id = ? AND wallet_id = ? LIMIT 1`;
+    const results = await this.executeQuery(sql, [transactionId, walletId]);
+    return Array.isArray(results) && results.length > 0 ? results[0] : null;
   }
 
   async verifyBalance(transactionId: string): Promise<boolean> {
@@ -106,7 +115,7 @@ export class LedgersModel extends BaseModel {
   async getBalanceHistory(
     walletId: string,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<ILedger[]> {
     let sql = `SELECT * FROM ${this.tableName} WHERE wallet_id = ?`;
     const params: any[] = [walletId];

@@ -87,7 +87,11 @@ export const authenticate = (
             user.role !== "CONSUMER"
           ) {
             isValid = false;
-          } else if (user.status === "ACTIVE") {
+          } else if (
+            user.status === "ACTIVE" ||
+            (decoded.userType === "Agent" && user.status === "PENDING")
+          ) {
+            // Allow ACTIVE users and PENDING agents (so they can check approval status)
             isValid = true;
           }
         }

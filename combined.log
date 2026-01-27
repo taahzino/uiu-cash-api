@@ -4561,3 +4561,256 @@
 {"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T19:54:00.286Z"}
 {"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T19:54:00.286Z"}
 {"level":"info","message":"User logged in: J3RKQWTD (mislam2430004@bscse.uiu.ac.bd)","service":"user-service","timestamp":"2026-01-27T19:59:39.884Z"}
+{"level":"info","message":"Admin 3A4TC6OD approved agent X7RR30R5 (AG7838385)","service":"user-service","timestamp":"2026-01-27T20:03:31.294Z"}
+{"level":"info","message":"Platform wallet credited with ৳9.25 fee from cash out transaction TXN-20260128-539342","service":"user-service","timestamp":"2026-01-27T20:03:39.785Z"}
+{"level":"info","message":"Cash out successful: J3RKQWTD withdrew ৳500 through agent AG7838385 (Fee: ৳9.25, Commission: ৳7.5)","service":"user-service","timestamp":"2026-01-27T20:03:39.797Z"}
+{"level":"info","message":"User logged out: J3RKQWTD - All tokens invalidated","service":"user-service","timestamp":"2026-01-27T20:04:30.915Z"}
+{"level":"info","message":"User logged in: O449Q3VG (taahzino@gmail.com)","service":"user-service","timestamp":"2026-01-27T20:04:39.503Z"}
+{"level":"info","message":"User logged out: O449Q3VG - All tokens invalidated","service":"user-service","timestamp":"2026-01-27T20:04:58.090Z"}
+{"level":"info","message":"User logged in: J3RKQWTD (mislam2430004@bscse.uiu.ac.bd)","service":"user-service","timestamp":"2026-01-27T20:05:01.597Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:12:05.505Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:12:05.596Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:12:05.597Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.620Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.630Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.638Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.642Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.648Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.653Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.657Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.662Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.667Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.670Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.673Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.678Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.683Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.688Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.693Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.695Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:05.696Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:12:05.706Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:12:05.708Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:12:05.710Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:12:05.710Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:12:20.869Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:12:20.907Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:12:20.908Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.923Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.927Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.933Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.936Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.940Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.948Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.953Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.956Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.961Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.964Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.967Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.970Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.973Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.977Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.981Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.983Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:20.983Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:12:20.990Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:12:20.991Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:12:20.992Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:12:20.993Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:12:24.628Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:12:24.676Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:12:24.676Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.698Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.704Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.712Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.718Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.724Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.729Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.741Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.747Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.752Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.760Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.765Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.769Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.774Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.779Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.783Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.787Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:24.787Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:12:24.795Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:12:24.797Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:12:24.798Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:12:24.798Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:12:44.499Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:12:44.561Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:12:44.561Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.581Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.588Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.596Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.602Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.607Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.618Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.629Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.639Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.645Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.650Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.654Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.662Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.666Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.671Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.672Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.678Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:12:44.678Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:12:44.686Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:12:44.689Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:12:44.690Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:12:44.690Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:15:27.365Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:15:27.471Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:15:27.471Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.515Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.521Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.527Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.533Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.539Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.544Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.549Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.555Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.561Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.565Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.567Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.573Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.580Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.582Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.589Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.592Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:27.592Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:15:27.601Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:15:27.605Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:15:27.608Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:15:27.608Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:15:32.306Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:15:32.346Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:15:32.346Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.365Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.374Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.379Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.384Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.389Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.392Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.397Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.402Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.405Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.408Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.415Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.421Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.424Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.426Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.430Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.433Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:15:32.433Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:15:32.443Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:15:32.445Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:15:32.446Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:15:32.446Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:16:37.831Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:16:37.898Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:16:37.898Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.922Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.928Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.932Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.935Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.942Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.946Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.949Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.953Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.958Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.964Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.969Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.973Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.977Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.981Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.984Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.990Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:16:37.990Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:16:37.996Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:16:37.998Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:16:37.999Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:16:37.999Z"}
+{"level":"info","message":"User logged out: J3RKQWTD - All tokens invalidated","service":"user-service","timestamp":"2026-01-27T20:23:39.454Z"}
+{"level":"info","message":"Agent logged in: K2ANMNLH (fhassan221063@bscse.uiu.ac.bd) - Agent Code: AG7838385","service":"user-service","timestamp":"2026-01-27T20:23:43.323Z"}
+{"level":"info","message":"Agent logged out: K2ANMNLH - All tokens invalidated","service":"user-service","timestamp":"2026-01-27T20:29:54.967Z"}
+{"level":"info","message":"Agent logged in: K2ANMNLH (fhassan221063@bscse.uiu.ac.bd) - Agent Code: AG7838385","service":"user-service","timestamp":"2026-01-27T20:30:03.573Z"}
+{"level":"info","message":"Agent logged out: K2ANMNLH - All tokens invalidated","service":"user-service","timestamp":"2026-01-27T20:30:36.993Z"}
+{"level":"info","message":"Agent logged in: K2ANMNLH (fhassan221063@bscse.uiu.ac.bd) - Agent Code: AG7838385","service":"user-service","timestamp":"2026-01-27T20:30:40.531Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:32:28.052Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:32:28.213Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:32:28.214Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.242Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.251Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.260Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.272Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.279Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.284Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.294Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.302Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.309Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.317Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.325Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.332Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.339Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.343Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.351Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.357Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:28.358Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:32:28.372Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:32:28.378Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:32:28.380Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:32:28.380Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:32:32.170Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:32:32.211Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:32:32.211Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.230Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.236Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.241Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.244Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.251Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.256Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.262Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.266Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.272Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.275Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.280Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.284Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.286Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.289Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.293Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.298Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:32:32.298Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:32:32.305Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:32:32.308Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:32:32.308Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:32:32.308Z"}
+{"level":"info","message":"Testing database connection...","service":"user-service","timestamp":"2026-01-27T20:36:53.267Z"}
+{"level":"info","message":"Database connection successful","service":"user-service","timestamp":"2026-01-27T20:36:53.412Z"}
+{"level":"info","message":"Initializing database tables...","service":"user-service","timestamp":"2026-01-27T20:36:53.412Z"}
+{"level":"info","message":"Table 'users' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.516Z"}
+{"level":"info","message":"Table 'admins' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.529Z"}
+{"level":"info","message":"Table 'wallets' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.540Z"}
+{"level":"info","message":"Table 'billers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.546Z"}
+{"level":"info","message":"Table 'agents' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.552Z"}
+{"level":"info","message":"Table 'sessions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.581Z"}
+{"level":"info","message":"Table 'transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.589Z"}
+{"level":"info","message":"Table 'ledgers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.598Z"}
+{"level":"info","message":"Table 'agent_cashouts' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.649Z"}
+{"level":"info","message":"Table 'bill_payments' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.658Z"}
+{"level":"info","message":"Table 'bank_transfers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.666Z"}
+{"level":"info","message":"Table 'platform_wallet_transactions' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.671Z"}
+{"level":"info","message":"Table 'offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.680Z"}
+{"level":"info","message":"Table 'user_offers' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.689Z"}
+{"level":"info","message":"Table 'audit_logs' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.696Z"}
+{"level":"info","message":"Table 'system_config' initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.703Z"}
+{"level":"info","message":"All database tables initialized successfully","service":"user-service","timestamp":"2026-01-27T20:36:53.703Z"}
+{"level":"info","message":"All default system configurations initialized","service":"user-service","timestamp":"2026-01-27T20:36:53.721Z"}
+{"level":"info","message":"Admin account already exists.","service":"user-service","timestamp":"2026-01-27T20:36:53.724Z"}
+{"level":"info","message":"Server is running on port 3001","service":"user-service","timestamp":"2026-01-27T20:36:53.727Z"}
+{"level":"info","message":"MODE: development","service":"user-service","timestamp":"2026-01-27T20:36:53.727Z"}

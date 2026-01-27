@@ -732,6 +732,14 @@ export const getTransactionHistory = async (req: Request, res: Response) => {
     const limitNum = parseInt(limit as string);
     const offset = (pageNum - 1) * limitNum;
 
+    // Get user's wallet
+    const userWallet = await Wallets.findByUserId(userId);
+    if (!userWallet) {
+      return sendResponse(res, STATUS_NOT_FOUND, {
+        message: "Wallet not found",
+      });
+    }
+
     // Build filter conditions
     const conditions: any = {};
     if (type) conditions.type = type;
@@ -746,10 +754,35 @@ export const getTransactionHistory = async (req: Request, res: Response) => {
     );
     const total = await Transactions.countByUserId(userId, conditions);
 
-    return sendResponse(res, STATUS_OK, {
-      message: "Transaction history retrieved successfully",
-      data: {
-        transactions: transactions.map((txn: any) => ({
+    // For each transaction, check the ledger to determine if it was credited or debited
+    const transactionsWithCreditStatus = await Promise.all(
+      transactions.map(async (txn: any) => {
+        // For certain transaction types, isCredited is always true
+        const alwaysCreditedTypes = [
+          TransactionType.ONBOARDING_BONUS,
+          TransactionType.CASHBACK,
+          TransactionType.COMMISSION,
+        ];
+
+        let isCredited: boolean;
+
+        if (alwaysCreditedTypes.includes(txn.type)) {
+          // These transaction types are always credits
+          isCredited = true;
+        } else {
+          // Find the ledger entry for this transaction and user's wallet
+          const ledgerEntry = await Ledgers.findByTransactionAndWallet(
+            txn.id,
+            userWallet.id,
+          );
+
+          // Determine if it was a credit (money in) or debit (money out)
+          isCredited = ledgerEntry
+            ? ledgerEntry.entry_type === EntryType.CREDIT
+            : false;
+        }
+
+        return {
           id: txn.id,
           transactionId: txn.transaction_id,
           type: txn.type,
@@ -760,9 +793,17 @@ export const getTransactionHistory = async (req: Request, res: Response) => {
           description: txn.description,
           senderId: txn.sender_id,
           receiverId: txn.receiver_id,
+          isCredited: isCredited,
           createdAt: txn.created_at,
           completedAt: txn.completed_at,
-        })),
+        };
+      }),
+    );
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Transaction history retrieved successfully",
+      data: {
+        transactions: transactionsWithCreditStatus,
         pagination: {
           currentPage: pageNum,
           totalPages: Math.ceil(total / limitNum),

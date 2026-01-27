@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
+import { v4 as uuidv4 } from "uuid";
 import logger from "../config/_logger";
 import { Users, UserRole, UserStatus } from "../models/Users.model";
 import { Wallets } from "../models/Wallets.model";
 import { Agents } from "../models/Agents.model";
-import { generateUserToken } from "../utilities/jwt";
+import { generateToken } from "../utilities/jwt";
 import { hashPassword, verifyPassword } from "../utilities/password";
 import {
   sendResponse,
@@ -19,7 +20,7 @@ import {
 
 /**
  * Agent Registration Controller
- * POST /api/agents/auth/register
+ * POST /api/auth/agent/register
  */
 export const agentRegister = async (req: Request, res: Response) => {
   try {
@@ -54,11 +55,15 @@ export const agentRegister = async (req: Request, res: Response) => {
     // Hash password
     const password_hash = await hashPassword(password);
 
+    // Generate public key for JWT validation
+    const public_key = uuidv4();
+
     // Create user with AGENT role (status PENDING - awaiting admin approval)
     const newUser = await Users.createUser({
       email,
       phone,
       password_hash,
+      public_key,
       first_name: firstName,
       last_name: lastName,
       role: UserRole.AGENT,
@@ -80,7 +85,7 @@ export const agentRegister = async (req: Request, res: Response) => {
     });
 
     logger.info(
-      `Agent registered: ${newUser.id} (${email}) - Agent Code: ${newAgent.agent_code} - Status: PENDING`
+      `Agent registered: ${newUser.id} (${email}) - Agent Code: ${newAgent.agent_code} - Status: PENDING`,
     );
 
     return sendResponse(res, STATUS_CREATED, {
@@ -115,7 +120,7 @@ export const agentRegister = async (req: Request, res: Response) => {
 
 /**
  * Agent Login Controller
- * POST /api/agents/auth/login
+ * POST /api/auth/agent/login
  */
 export const agentLogin = async (req: Request, res: Response) => {
   try {
@@ -174,11 +179,7 @@ export const agentLogin = async (req: Request, res: Response) => {
     }
 
     // Generate token
-    const token = generateUserToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    const token = generateToken(user.id, user.public_key, "Agent");
 
     // Update login info
     await Users.updateLoginInfo(user.id);
@@ -187,14 +188,14 @@ export const agentLogin = async (req: Request, res: Response) => {
     const wallet = await Wallets.findByUserId(user.id);
 
     logger.info(
-      `Agent logged in: ${user.id} (${user.email}) - Agent Code: ${agent.agent_code}`
+      `Agent logged in: ${user.id} (${user.email}) - Agent Code: ${agent.agent_code}`,
     );
 
     return sendResponse(res, STATUS_OK, {
       message: "Login successful",
       data: {
         token,
-        user: {
+        profile: {
           id: user.id,
           email: user.email,
           phone: user.phone,
@@ -204,17 +205,33 @@ export const agentLogin = async (req: Request, res: Response) => {
           status: user.status,
           emailVerified: user.email_verified,
           phoneVerified: user.phone_verified,
-          walletBalance: wallet?.balance || 0,
+          dateOfBirth: user.date_of_birth,
+          nidNumber: user.nid_number,
+          createdAt: user.created_at,
+          agent: {
+            id: agent.id,
+            agentCode: agent.agent_code,
+            businessName: agent.business_name,
+            businessAddress: agent.business_address,
+            status: agent.status,
+            totalCashouts: agent.total_cashouts,
+            totalCommissionEarned: agent.total_commission_earned,
+            approvedAt: agent.approved_at,
+          },
+          wallet: wallet
+            ? {
+                balance: wallet.balance,
+                availableBalance: wallet.available_balance,
+                pendingBalance: wallet.pending_balance,
+                currency: wallet.currency,
+                dailyLimit: wallet.daily_limit,
+                monthlyLimit: wallet.monthly_limit,
+                dailySpent: wallet.daily_spent,
+                monthlySpent: wallet.monthly_spent,
+              }
+            : null,
         },
-        agent: {
-          id: agent.id,
-          agentCode: agent.agent_code,
-          businessName: agent.business_name,
-          businessAddress: agent.business_address,
-          status: agent.status,
-          totalCashouts: agent.total_cashouts,
-          totalCommissionEarned: agent.total_commission_earned,
-        },
+        userType: "Agent",
       },
     });
   } catch (error: any) {
@@ -226,12 +243,46 @@ export const agentLogin = async (req: Request, res: Response) => {
 };
 
 /**
+ * Agent Logout Controller
+ * POST /api/auth/agent/logout
+ * Regenerates the public_key to invalidate all existing tokens
+ */
+export const agentLogout = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "Authentication required",
+      });
+    }
+
+    // Generate new public key to invalidate all existing tokens
+    const new_public_key = uuidv4();
+
+    // Update user's public key
+    await Users.updateUser(userId, { public_key: new_public_key });
+
+    logger.info(`Agent logged out: ${userId} - All tokens invalidated`);
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Logout successful. All sessions have been terminated.",
+    });
+  } catch (error: any) {
+    logger.error("Agent logout error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred during logout",
+    });
+  }
+};
+
+/**
  * Get Current Agent Profile
- * GET /api/agents/auth/profile
+ * GET /api/auth/agent/profile
  */
 export const getAgentProfile = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
@@ -317,11 +368,11 @@ export const getAgentProfile = async (req: Request, res: Response) => {
 
 /**
  * Update Agent Profile
- * PUT /api/agents/auth/profile
+ * PUT /api/auth/agent/profile
  */
 export const updateAgentProfile = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
@@ -407,11 +458,11 @@ export const updateAgentProfile = async (req: Request, res: Response) => {
 
 /**
  * Change Agent Password
- * PUT /api/agents/auth/change-password
+ * PUT /api/auth/agent/change-password
  */
 export const changeAgentPassword = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
@@ -438,7 +489,7 @@ export const changeAgentPassword = async (req: Request, res: Response) => {
     // Verify current password
     const isPasswordValid = await verifyPassword(
       currentPassword,
-      user.password_hash
+      user.password_hash,
     );
     if (!isPasswordValid) {
       return sendResponse(res, STATUS_BAD_REQUEST, {

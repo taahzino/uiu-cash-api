@@ -16,6 +16,7 @@ export interface IAdmin {
   id: string;
   email: string;
   password_hash: string;
+  public_key: string;
   name: string;
   status: AdminStatus;
   last_login_at?: Date | string | null;
@@ -30,6 +31,7 @@ export interface IAdmin {
 export interface ICreateAdmin {
   email: string;
   password_hash: string;
+  public_key: string;
   name: string;
   status?: AdminStatus;
   created_by?: string | null;
@@ -41,6 +43,7 @@ export interface ICreateAdmin {
 export interface IUpdateAdmin {
   email?: string;
   password_hash?: string;
+  public_key?: string;
   name?: string;
   status?: AdminStatus;
   last_login_at?: Date | string | null;
@@ -56,6 +59,7 @@ export class AdminsModel extends BaseModel {
       id CHAR(8) PRIMARY KEY,
       email VARCHAR(255) UNIQUE NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
+      public_key CHAR(36) NOT NULL,
       name VARCHAR(255) NOT NULL,
       status ENUM('ACTIVE', 'SUSPENDED') NOT NULL DEFAULT 'ACTIVE',
       last_login_at TIMESTAMP NULL,

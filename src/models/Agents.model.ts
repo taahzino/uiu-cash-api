@@ -128,7 +128,7 @@ export class AgentsModel extends BaseModel {
   async rejectAgent(
     id: string,
     approvedBy: string,
-    reason: string
+    reason: string,
   ): Promise<IAgent | null> {
     const sql = `
       UPDATE ${this.tableName}
@@ -180,6 +180,18 @@ export class AgentsModel extends BaseModel {
     `;
     const results = await this.executeQuery(sql);
     return results[0]?.total || 0;
+  }
+
+  async countByStatus(status: AgentStatus): Promise<number> {
+    const sql = `SELECT COUNT(*) as count FROM ${this.tableName} WHERE status = ?`;
+    const results = await this.executeQuery(sql, [status]);
+    return results[0]?.count || 0;
+  }
+
+  async count(): Promise<number> {
+    const sql = `SELECT COUNT(*) as count FROM ${this.tableName}`;
+    const results = await this.executeQuery(sql);
+    return results[0]?.count || 0;
   }
 }
 

@@ -4,14 +4,14 @@
     "account_name": "UIU Cash Platform",
     "bank_name": "UIU Cash Internal",
     "account_number": "PLATFORM00000001",
-    "balance": "1000000.00",
+    "balance": "999900.00",
     "currency": "BDT",
     "status": "ACTIVE",
     "description": "Main platform wallet for managing bonuses, commissions, and revenue",
     "created_at": "2024-01-01T00:00:00Z",
-    "last_transaction_at": "2026-01-13T17:59:39.222Z",
+    "last_transaction_at": "2026-01-27T12:56:50.888Z",
     "total_revenue_collected": "0.00",
-    "total_bonuses_given": "0.00",
+    "total_bonuses_given": "100.00",
     "total_commissions_paid": "0.00"
   }
 }

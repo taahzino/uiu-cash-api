@@ -440,7 +440,7 @@ Authorization: Bearer <jwt-token>
 |-----------|-------|-------------|
 | send_money_fee | ৳5.00 | Flat fee for P2P transfers |
 | agent_commission_rate | 1.5% | Agent commission percentage |
-| onboarding_bonus | ৳50.00 | Bonus for new PERSONAL users |
+| onboarding_bonus | ৳50.00 | Bonus for new CONSUMER users |
 
 ### Transaction Limits
 
@@ -478,7 +478,7 @@ POST /api/auth/register
   "firstName": "Test",
   "lastName": "User",
   "dateOfBirth": "1995-01-15",
-  "role": "PERSONAL"
+  "role": "CONSUMER"
 }
 ```
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Base URL:** `http://localhost:5000`  
-**Last Updated:** January 16, 2026
+**Last Updated:** January 27, 2026
 
 ---
 
@@ -25,19 +25,25 @@ All protected endpoints require a JWT token in the Authorization header:
 Authorization: Bearer <token>
 ```
 
-Tokens expire after 3 hours and must be refreshed by logging in again.
+**Token Details:**
+
+- **Algorithm:** RS256 (RSA with SHA-256)
+- **Expiration:** 7 days
+- **Payload:** `{ id, public_key, userType }`
+
+Tokens expire after 7 days and must be refreshed by logging in again.
 
 ---
 
 ## User Authentication
 
-Base URL: `/api/auth`
+Base URL: `/api/auth/consumer`
 
 ### 1. Register User
 
-Creates a new user account. PERSONAL users are automatically activated and receive ৳50 welcome bonus. AGENT users require admin approval.
+Creates a new user account. CONSUMER users are automatically activated and receive ৳50 welcome bonus.
 
-**Endpoint:** `POST /api/auth/register`  
+**Endpoint:** `POST /api/auth/consumer/register`  
 **Authentication:** None (Public)
 
 **Request Body:**
@@ -49,7 +55,7 @@ Creates a new user account. PERSONAL users are automatically activated and recei
   "password": "SecurePass123!",
   "firstName": "John",
   "lastName": "Doe",
-  "role": "PERSONAL",
+  "role": "CONSUMER",
   "dateOfBirth": "1995-05-15",
   "nidNumber": "1234567890"
 }
@@ -57,16 +63,16 @@ Creates a new user account. PERSONAL users are automatically activated and recei
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| email | string | Yes | Valid email format |
-| phone | string | Yes | Bangladeshi format: `01[3-9]XXXXXXXX` (11 digits) |
-| password | string | Yes | Min 8 chars, must contain uppercase, lowercase, number, and special char |
-| firstName | string | Yes | 2-100 characters |
-| lastName | string | Yes | 2-100 characters |
-| role | enum | Yes | `PERSONAL` or `AGENT` |
-| dateOfBirth | string | No | ISO date format (YYYY-MM-DD) |
-| nidNumber | string | No | 10-20 characters |
+| Field       | Type   | Required | Validation                                                               |
+| ----------- | ------ | -------- | ------------------------------------------------------------------------ |
+| email       | string | Yes      | Valid email format                                                       |
+| phone       | string | Yes      | Bangladeshi format: `01[3-9]XXXXXXXX` (11 digits)                        |
+| password    | string | Yes      | Min 8 chars, must contain uppercase, lowercase, number, and special char |
+| firstName   | string | Yes      | 2-100 characters                                                         |
+| lastName    | string | Yes      | 2-100 characters                                                         |
+| role        | enum   | Yes      | `CONSUMER` or `AGENT`                                                    |
+| dateOfBirth | string | No       | ISO date format (YYYY-MM-DD)                                             |
+| nidNumber   | string | No       | 10-20 characters                                                         |
 
 **Success Response (201 Created):**
 
@@ -81,7 +87,7 @@ Creates a new user account. PERSONAL users are automatically activated and recei
       "phone": "01712345678",
       "firstName": "John",
       "lastName": "Doe",
-      "role": "PERSONAL",
+      "role": "CONSUMER",
       "status": "ACTIVE"
     },
     "bonusGiven": true
@@ -100,7 +106,7 @@ Creates a new user account. PERSONAL users are automatically activated and recei
 
 Authenticates a user and returns a JWT token.
 
-**Endpoint:** `POST /api/auth/login`  
+**Endpoint:** `POST /api/auth/consumer/login`  
 **Authentication:** None (Public)
 
 **Request Body:**
@@ -114,10 +120,10 @@ Authenticates a user and returns a JWT token.
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| identifier | string | Yes | Email or phone number |
-| password | string | Yes | User's password |
+| Field      | Type   | Required | Validation            |
+| ---------- | ------ | -------- | --------------------- |
+| identifier | string | Yes      | Email or phone number |
+| password   | string | Yes      | User's password       |
 
 **Success Response (200 OK):**
 
@@ -126,19 +132,32 @@ Authenticates a user and returns a JWT token.
   "success": true,
   "message": "Login successful",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
+    "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "profile": {
       "id": "A1B2C3D4",
       "email": "user@example.com",
       "phone": "01712345678",
       "firstName": "John",
       "lastName": "Doe",
-      "role": "PERSONAL",
+      "role": "CONSUMER",
       "status": "ACTIVE",
       "emailVerified": false,
       "phoneVerified": false,
-      "walletBalance": 50.00
-    }
+      "dateOfBirth": "1995-05-15",
+      "nidNumber": "1234567890",
+      "createdAt": "2026-01-15T10:30:00.000Z",
+      "wallet": {
+        "balance": 50.0,
+        "availableBalance": 50.0,
+        "pendingBalance": 0.0,
+        "currency": "BDT",
+        "dailyLimit": 25000.0,
+        "monthlyLimit": 100000.0,
+        "dailySpent": 0.0,
+        "monthlySpent": 0.0
+      }
+    },
+    "userType": "Consumer"
   }
 }
 ```
@@ -146,7 +165,7 @@ Authenticates a user and returns a JWT token.
 **Error Responses:**
 
 - **401 Unauthorized** - Invalid credentials
-- **403 Forbidden** - Account suspended or rejected
+- **403 Forbidden** - Accountuser/ suspended or rejected
 
 **Status-Specific Messages:**
 
@@ -181,7 +200,7 @@ Authorization: Bearer <user_token>
       "phone": "01712345678",
       "firstName": "John",
       "lastName": "Doe",
-      "role": "PERSONAL",
+      "role": "CONSUMER",
       "status": "ACTIVE",
       "dateOfBirth": "1995-05-15",
       "nidNumber": "1234567890",
@@ -189,14 +208,14 @@ Authorization: Bearer <user_token>
       "phoneVerified": false,
       "createdAt": "2026-01-15T10:30:00.000Z",
       "wallet": {
-        "balance": 50.00,
-        "availableBalance": 50.00,
-        "pendingBalance": 0.00,
+        "balance": 50.0,
+        "availableBalance": 50.0,
+        "pendingBalance": 0.0,
         "currency": "BDT",
-        "dailyLimit": 25000.00,
-        "monthlyLimit": 100000.00,
-        "dailySpent": 0.00,
-        "monthlySpent": 0.00
+        "dailyLimit": 25000.0,
+        "monthlyLimit": 100000.0,
+        "dailySpent": 0.0,
+        "monthlySpent": 0.0
       }
     }
   }
@@ -213,7 +232,7 @@ Authorization: Bearer <user_token>
 
 Updates the authenticated user's profile information.
 
-**Endpoint:** `PUT /api/auth/profile`  
+**Endpoint:** `PUT /api/auth/consumer/profile`  
 **Authentication:** Required (User Token)
 
 **Headers:**
@@ -234,11 +253,11 @@ Authorization: Bearer <user_token>
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| firstName | string | No | 2-100 characters |
-| lastName | string | No | 2-100 characters |
-| dateOfBirth | string | No | ISO date format (YYYY-MM-DD) |
+| Field       | Type   | Required | Validation                   |
+| ----------- | ------ | -------- | ---------------------------- |
+| firstName   | string | No       | 2-100 characters             |
+| lastName    | string | No       | 2-100 characters             |
+| dateOfBirth | string | No       | ISO date format (YYYY-MM-DD) |
 
 **Success Response (200 OK):**
 
@@ -269,7 +288,7 @@ Authorization: Bearer <user_token>
 
 Changes the authenticated user's password.
 
-**Endpoint:** `PUT /api/auth/change-password`  
+**Endpoint:** `PUT /api/auth/consumer/change-password`  
 **Authentication:** Required (User Token)
 
 **Headers:**
@@ -289,10 +308,10 @@ Authorization: Bearer <user_token>
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| currentPassword | string | Yes | Current password |
-| newPassword | string | Yes | Min 8 chars, must contain uppercase, lowercase, number, and special char |
+| Field           | Type   | Required | Validation                                                               |
+| --------------- | ------ | -------- | ------------------------------------------------------------------------ |
+| currentPassword | string | Yes      | Current password                                                         |
+| newPassword     | string | Yes      | Min 8 chars, must contain uppercase, lowercase, number, and special char |
 
 **Success Response (200 OK):**
 
@@ -312,7 +331,7 @@ Authorization: Bearer <user_token>
 
 ## Agent Authentication
 
-Base URL: `/api/agents/auth`
+Base URL: `/api/auth/agent`
 
 Agents are users with additional business information. Agent accounts require admin approval before they can login.
 
@@ -320,7 +339,7 @@ Agents are users with additional business information. Agent accounts require ad
 
 Creates a new agent account with business details. Account status will be `PENDING` until approved by an admin.
 
-**Endpoint:** `POST /api/agents/auth/register`  
+**Endpoint:** `POST /api/auth/agent/register`  
 **Authentication:** None (Public)
 
 **Request Body:**
@@ -341,17 +360,17 @@ Creates a new agent account with business details. Account status will be `PENDI
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| email | string | Yes | Valid email format |
-| phone | string | Yes | Bangladeshi format: `01[3-9]XXXXXXXX` |
-| password | string | Yes | Min 8 chars, uppercase, lowercase, number, special char |
-| firstName | string | Yes | 2-100 characters |
-| lastName | string | Yes | 2-100 characters |
-| businessName | string | Yes | 3-255 characters |
-| businessAddress | string | Yes | Minimum 10 characters |
-| dateOfBirth | string | No | ISO date format (YYYY-MM-DD) |
-| nidNumber | string | No | 10-20 characters |
+| Field           | Type   | Required | Validation                                              |
+| --------------- | ------ | -------- | ------------------------------------------------------- |
+| email           | string | Yes      | Valid email format                                      |
+| phone           | string | Yes      | Bangladeshi format: `01[3-9]XXXXXXXX`                   |
+| password        | string | Yes      | Min 8 chars, uppercase, lowercase, number, special char |
+| firstName       | string | Yes      | 2-100 characters                                        |
+| lastName        | string | Yes      | 2-100 characters                                        |
+| businessName    | string | Yes      | 3-255 characters                                        |
+| businessAddress | string | Yes      | Minimum 10 characters                                   |
+| dateOfBirth     | string | No       | ISO date format (YYYY-MM-DD)                            |
+| nidNumber       | string | No       | 10-20 characters                                        |
 
 **Success Response (201 Created):**
 
@@ -393,7 +412,7 @@ Creates a new agent account with business details. Account status will be `PENDI
 
 Authenticates an agent and returns a JWT token. Only agents with `ACTIVE` status can login.
 
-**Endpoint:** `POST /api/agents/auth/login`  
+**Endpoint:** `POST /api/auth/agent/login`  
 **Authentication:** None (Public)
 
 **Request Body:**
@@ -407,10 +426,10 @@ Authenticates an agent and returns a JWT token. Only agents with `ACTIVE` status
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| identifier | string | Yes | Email or phone number |
-| password | string | Yes | Agent's password |
+| Field      | Type   | Required | Validation            |
+| ---------- | ------ | -------- | --------------------- |
+| identifier | string | Yes      | Email or phone number |
+| password   | string | Yes      | Agent's password      |
 
 **Success Response (200 OK):**
 
@@ -419,8 +438,8 @@ Authenticates an agent and returns a JWT token. Only agents with `ACTIVE` status
   "success": true,
   "message": "Login successful",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
+    "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "profile": {
       "id": "B2C3D4E5",
       "email": "agent@example.com",
       "phone": "01812345678",
@@ -430,17 +449,31 @@ Authenticates an agent and returns a JWT token. Only agents with `ACTIVE` status
       "status": "ACTIVE",
       "emailVerified": false,
       "phoneVerified": false,
-      "walletBalance": 0.00
+      "dateOfBirth": "1990-03-10",
+      "nidNumber": "1234567890123",
+      "createdAt": "2026-01-10T08:15:00.000Z",
+      "agent": {
+        "id": 1,
+        "agentCode": "AG1234567",
+        "businessName": "Khan Mobile Banking",
+        "businessAddress": "123 Main Street, Dhaka-1205",
+        "status": "ACTIVE",
+        "totalCashouts": 0,
+        "totalCommissionEarned": 0.0,
+        "approvedAt": "2026-01-11T14:30:00.000Z"
+      },
+      "wallet": {
+        "balance": 0.0,
+        "availableBalance": 0.0,
+        "pendingBalance": 0.0,
+        "currency": "BDT",
+        "dailyLimit": 100000.0,
+        "monthlyLimit": 500000.0,
+        "dailySpent": 0.0,
+        "monthlySpent": 0.0
+      }
     },
-    "agent": {
-      "id": 1,
-      "agentCode": "AG1234567",
-      "businessName": "Khan Mobile Banking",
-      "businessAddress": "123 Main Street, Dhaka-1205",
-      "status": "ACTIVE",
-      "totalCashouts": 0,
-      "totalCommissionEarned": 0.00
-    }
+    "userType": "Agent"
   }
 }
 ```
@@ -450,7 +483,7 @@ Authenticates an agent and returns a JWT token. Only agents with `ACTIVE` status
 - **401 Unauthorized** - Invalid credentials
 - **403 Forbidden** - Account not active
 
-**Status-Specific Messages:**
+\*\*Status-Specific Messageuth/agent
 
 - `PENDING`: "Your agent account is pending approval. Please wait for admin approval."
 - `SUSPENDED`: "Account is suspended. Please contact support."
@@ -517,7 +550,7 @@ Authorization: Bearer <agent_token>
       "monthlySpent": 0.00
     }
   }
-}
+}uth/agent
 ```
 
 **Error Responses:**
@@ -554,17 +587,17 @@ Authorization: Bearer <agent_token>
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| firstName | string | No | 2-100 characters |
-| lastName | string | No | 2-100 characters |
-| businessName | string | No | 3-255 characters |
-| businessAddress | string | No | Minimum 10 characters |
-| dateOfBirth | string | No | ISO date format (YYYY-MM-DD) |
+| Field           | Type   | Required | Validation                   |
+| --------------- | ------ | -------- | ---------------------------- |
+| firstName       | string | No       | 2-100 characters             |
+| lastName        | string | No       | 2-100 characters             |
+| businessName    | string | No       | 3-255 characters             |
+| businessAddress | string | No       | Minimum 10 characters        |
+| dateOfBirth     | string | No       | ISO date format (YYYY-MM-DD) |
 
 **Success Response (200 OK):**
 
-```json
+````json
 {
   "success": true,
   "message": "Profile updated successfully",
@@ -582,7 +615,7 @@ Authorization: Bearer <agent_token>
     }
   }
 }
-```
+```uth/agent
 
 **Error Responses:**
 
@@ -596,14 +629,16 @@ Authorization: Bearer <agent_token>
 
 Changes the authenticated agent's password.
 
-**Endpoint:** `PUT /api/agents/auth/change-password`  
+**Endpoint:** `PUT /api/agents/auth/change-password`
 **Authentication:** Required (Agent Token)
 
 **Headers:**
 
-```
+````
+
 Authorization: Bearer <agent_token>
-```
+
+````
 
 **Request Body:**
 
@@ -612,14 +647,14 @@ Authorization: Bearer <agent_token>
   "currentPassword": "SecurePass123!",
   "newPassword": "NewSecurePass456!"
 }
-```
+````
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| currentPassword | string | Yes | Current password |
-| newPassword | string | Yes | Min 8 chars, uppercase, lowercase, number, special char |
+| Field           | Type   | Required | Validation                                              |
+| --------------- | ------ | -------- | ------------------------------------------------------- |
+| currentPassword | string | Yes      | Current password                                        |
+| newPassword     | string | Yes      | Min 8 chars, uppercase, lowercase, number, special char |
 
 **Success Response (200 OK):**
 
@@ -640,7 +675,7 @@ Authorization: Bearer <agent_token>
 
 ## Admin Authentication
 
-Base URL: `/api/admin`
+Base URL: `/api/auth/admin`
 
 Admin endpoints are restricted to authenticated administrators.
 
@@ -648,7 +683,7 @@ Admin endpoints are restricted to authenticated administrators.
 
 Authenticates an admin and returns a JWT token.
 
-**Endpoint:** `POST /api/admin/login`  
+**Endpoint:** `POST /api/auth/admin/login`  
 **Authentication:** None (Public)
 
 **Request Body:**
@@ -662,10 +697,10 @@ Authenticates an admin and returns a JWT token.
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| email | string | Yes | Valid email format |
-| password | string | Yes | Admin's password |
+| Field    | Type   | Required | Validation         |
+| -------- | ------ | -------- | ------------------ |
+| email    | string | Yes      | Valid email format |
+| password | string | Yes      | Admin's password   |
 
 **Success Response (200 OK):**
 
@@ -674,12 +709,16 @@ Authenticates an admin and returns a JWT token.
   "success": true,
   "message": "Login successful",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "admin": {
+    "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "profile": {
       "id": "ADMIN001",
       "email": "admin@uiucash.com",
-      "name": "System Administrator"
-    }
+      "name": "System Administrator",
+      "status": "ACTIVE",
+      "lastLoginAt": "2026-01-27T09:30:00.000Z",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    "userType": "Admin"
   }
 }
 ```
@@ -691,7 +730,7 @@ Authenticates an admin and returns a JWT token.
 
 ---
 
-### 2. Create Admin Account
+### 2. Create Admin Accounuth/at
 
 Creates a new admin account. This endpoint is restricted to authenticated admins only.
 
@@ -716,11 +755,11 @@ Authorization: Bearer <admin_token>
 
 **Field Validations:**
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| email | string | Yes | Valid email format |
-| password | string | Yes | Min 8 chars, uppercase, lowercase, number, special char |
-| name | string | Yes | 2-255 characters |
+| Field    | Type   | Required | Validation                                              |
+| -------- | ------ | -------- | ------------------------------------------------------- |
+| email    | string | Yes      | Valid email format                                      |
+| password | string | Yes      | Min 8 chars, uppercase, lowercase, number, special char |
+| name     | string | Yes      | 2-255 characters                                        |
 
 **Success Response (201 Created):**
 
@@ -747,11 +786,8 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### 3. Get Admin Profile
+### 3. Get Admin Profileuth/admin/profile`
 
-Retrieves the authenticated admin's profile information.
-
-**Endpoint:** `GET /api/admin/profile`  
 **Authentication:** Required (Admin Token)
 
 **Headers:**
@@ -770,6 +806,9 @@ Authorization: Bearer <admin_token>
     "admin": {
       "id": "ADMIN001",
       "email": "admin@uiucash.com",
+      "name": "System Administrator",
+      "status": "ACTIVE",
+      "last_login_at": "2026-01-27,
       "name": "System Administrator",
       "role": "ADMIN",
       "status": "ACTIVE",
@@ -803,33 +842,40 @@ All API responses follow this consistent format:
 
 ### HTTP Status Codes
 
-| Code | Meaning | Usage |
-|------|---------|-------|
-| 200 | OK | Successful GET, PUT, DELETE requests |
-| 201 | Created | Successful POST requests that create resources |
-| 400 | Bad Request | Validation errors or invalid input |
-| 401 | Unauthorized | Invalid or missing authentication |
-| 403 | Forbidden | Authenticated but not authorized |
-| 404 | Not Found | Resource does not exist |
-| 409 | Conflict | Resource already exists (e.g., duplicate email) |
-| 500 | Internal Server Error | Server-side error |
+| Code | Meaning               | Usage                                           |
+| ---- | --------------------- | ----------------------------------------------- |
+| 200  | OK                    | Successful GET, PUT, DELETE requests            |
+| 201  | Created               | Successful POST requests that create resources  |
+| 400  | Bad Request           | Validation errors or invalid input              |
+| 401  | Unauthorized          | Invalid or missing authentication               |
+| 403  | Forbidden             | Authenticated but not authorized                |
+| 404  | Not Found             | Resource does not exist                         |
+| 409  | Conflict              | Resource already exists (e.g., duplicate email) |
+| 500  | Internal Server Error | Server-side error                               |
 
 ### User Status Values
 
-| Status | Description |
-|--------|-------------|
-| PENDING | User registered, awaiting approval (AGENT only) |
-| ACTIVE | User can access all features |
-| SUSPENDED | User temporarily blocked |
-| REJECTED | User registration rejected (AGENT only) |
+| Status    | Description                                     |
+| --------- | ----------------------------------------------- |
+| PENDING   | User registered, awaiting approval (AGENT only) |
+| ACTIVE    | User can access all features                    |
+| SUSPENDED | User temporarily blocked                        |
+| REJECTED  | User registration rejected (AGENT only)         |
 
 ### User Roles
 
 | Role | Description |
-|------|-------------|
-| PERSONAL | Regular user, auto-activated, gets ৳50 bonus |
-| AGENT | Business user, requires admin approval |
-| ADMIN | System administrator (separate authentication) |
+
+### Consumer Types (JWT Payload)
+
+| UserType | Description                                    |
+| -------- | ---------------------------------------------- |
+| User     | Regular CONSUMER user                          |
+| Agent    | Approved agent user                            |
+| Admin    | System administrator                           |
+| CONSUMER | Regular user, auto-activated, gets ৳50 bonus   |
+| AGENT    | Business user, requires admin approval         |
+| ADMIN    | System administrator (separate authentication) |
 
 ---
 
@@ -898,49 +944,71 @@ All API responses follow this consistent format:
 
 You can use these test accounts for development:
 
-**PERSONAL User:**
+**CONSUMER User:**
+
 - Email: `user@test.com`
 - Phone: `01712345678`
 - Password: `TestUser123!`
 
 **AGENT (After Admin Approval):**
+
 - Email: `agent@test.com`
 - Phone: `01812345678`
 - Password: `TestAgent123!`
-
-**ADMIN:**
-- Email: `admin@uiucash.com`
-- Password: `Admin123!`
-
-### Example Request (cURL)
-
-**Register User:**
-
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "phone": "01712345678",
-    "password": "SecurePass123!",
-    "firstName": "Test",
-    "lastName": "User",
-    "role": "PERSONAL"
+  5000/api/auth/consumer/register \
+   -H "Content-Type: application/json" \
+   -d '{
+  "email": "test@example.com",
+  "phone": "01712345678",
+  "password": "SecurePass123!",
+  "firstName": "Test",
+  "lastName": "Consumer",
+  "role": "CONSUMER"
   }'
-```
+
+````
 
 **Login and Get Token:**
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/login \
+curl -X POST http://localhost:5000/api/auth/consumer/login \
   -H "Content-Type: application/json" \
   -d '{
     "identifier": "test@example.com",
     "password": "SecurePass123!"
   }'
-```
+````
 
 **Use Token in Protected Endpoint:**
+
+```bash
+curl -X GET http://localhost:5000/api/auth/consumer/profile \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Agent Login:**
+
+```bash
+curl -X POST http://localhost:5000/api/auth/agent/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifier": "agent@test.com",
+    "password": "TestAgent123!"
+  }'
+```
+
+**Admin Login:**
+
+```bash
+curl -X POST http://localhost:5000/api/auth/admin/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@uiucash.com",
+    "password": "Admin123!"
+  }'
+```
+
+---
 
 ```bash
 curl -X GET http://localhost:3000/api/auth/profile \

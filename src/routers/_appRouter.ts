@@ -1,12 +1,10 @@
 import express, { NextFunction, Request, Response, Router } from "express";
 import _globals from "../config/_globals";
-import adminAuthRouter from "./admin.auth.router";
-import userAuthRouter from "./user.auth.router";
-import agentAuthRouter from "./agent.auth.router";
-import userManagementRouter from "./user.management.router";
+import authRouter from "./_authRouter";
+import adminRouter from "./_adminRouter";
 import systemConfigRouter from "./system.config.router";
-import analyticsRouter from "./analytics.router";
 import transactionRouter from "./transaction.router";
+import cashoutRouter from "./cashout.router";
 
 const appRouter = Router();
 
@@ -17,11 +15,11 @@ appRouter.get("/", (req: Request, res: Response) => {
   return;
 });
 
-// User authentication routes
-appRouter.use("/api/auth", userAuthRouter);
+// Authentication routes
+appRouter.use("/api/auth", authRouter);
 
-// Agent authentication routes
-appRouter.use("/api/agents/auth", agentAuthRouter);
+// Admin routes
+appRouter.use("/api/admin", adminRouter);
 
 // Transaction routes
 appRouter.use("/api/transactions", transactionRouter);
@@ -29,10 +27,8 @@ appRouter.use("/api/transactions", transactionRouter);
 // System configuration routes
 appRouter.use("/api/config", systemConfigRouter);
 
-// Admin routes
-appRouter.use("/api/admin", adminAuthRouter);
-appRouter.use("/api/admin/users", userManagementRouter);
-appRouter.use("/api/admin/analytics", analyticsRouter);
+// Cash out routes
+appRouter.use("/api/cash-out", cashoutRouter);
 
 appRouter.use("/public", express.static(_globals.PUBLIC_DIR));
 

@@ -12,10 +12,10 @@ import {
 } from "../utilities/response";
 
 /**
- * Get All Users (Admin)
- * GET /api/admin/users
+ * Get All Consumers (Admin)
+ * GET /api/admin/consumers
  */
-export const getAllUsers = async (req: Request, res: Response) => {
+export const getAllConsumers = async (req: Request, res: Response) => {
   try {
     const { page = 1, limit = 20, status, role, search } = req.query;
 
@@ -32,11 +32,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
     if (search) {
       // Full-text search
-      users = await Users.searchUsers(
-        search as string,
-        limitNum,
-        offset
-      );
+      users = await Users.searchUsers(search as string, limitNum, offset);
       total = users.length; // Approximate
     } else {
       users = await Users.findAll(conditions, limitNum, offset);
@@ -61,7 +57,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
           createdAt: user.created_at,
           walletBalance: wallet?.balance || 0,
         };
-      })
+      }),
     );
 
     return sendResponse(res, STATUS_OK, {
@@ -85,10 +81,10 @@ export const getAllUsers = async (req: Request, res: Response) => {
 };
 
 /**
- * Get User Details (Admin)
- * GET /api/admin/users/:id
+ * Get Consumer Details (Admin)
+ * GET /api/admin/consumers/:id
  */
-export const getUserDetails = async (req: Request, res: Response) => {
+export const getConsumerDetails = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -156,10 +152,10 @@ export const getUserDetails = async (req: Request, res: Response) => {
 };
 
 /**
- * Update User Status (Admin)
- * PUT /api/admin/users/:id/status
+ * Update Consumer Status (Admin)
+ * PUT /api/admin/consumers/:id/status
  */
-export const updateUserStatus = async (req: Request, res: Response) => {
+export const updateConsumerStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -192,7 +188,7 @@ export const updateUserStatus = async (req: Request, res: Response) => {
     const updatedUser = await Users.updateStatus(id, status);
 
     logger.info(
-      `Admin ${res.locals.admin?.adminId} updated user ${id} status to ${status}`
+      `Admin ${res.locals.admin?.id} updated user ${id} status to ${status}`,
     );
 
     return sendResponse(res, STATUS_OK, {
@@ -214,10 +210,10 @@ export const updateUserStatus = async (req: Request, res: Response) => {
 };
 
 /**
- * Search Users (Admin)
- * GET /api/admin/users/search
+ * Search Consumers (Admin)
+ * GET /api/admin/consumers/search
  */
-export const searchUsers = async (req: Request, res: Response) => {
+export const searchConsumers = async (req: Request, res: Response) => {
   try {
     const { query, limit = 20 } = req.query;
 
@@ -229,7 +225,7 @@ export const searchUsers = async (req: Request, res: Response) => {
 
     const users = await Users.searchUsers(
       query as string,
-      parseInt(limit as string)
+      parseInt(limit as string),
     );
 
     const usersWithWallets = await Promise.all(
@@ -245,7 +241,7 @@ export const searchUsers = async (req: Request, res: Response) => {
           status: user.status,
           walletBalance: wallet?.balance || 0,
         };
-      })
+      }),
     );
 
     return sendResponse(res, STATUS_OK, {
@@ -264,10 +260,10 @@ export const searchUsers = async (req: Request, res: Response) => {
 };
 
 /**
- * Get User Transactions (Admin)
- * GET /api/admin/users/:id/transactions
+ * Get Consumer Transactions (Admin)
+ * GET /api/admin/consumers/:id/transactions
  */
-export const getUserTransactions = async (req: Request, res: Response) => {
+export const getConsumerTransactions = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { page = 1, limit = 20 } = req.query;

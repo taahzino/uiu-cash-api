@@ -68,7 +68,7 @@ export class AgentCashoutsModel extends BaseModel {
   `;
 
   async createCashout(
-    cashoutData: ICreateAgentCashout
+    cashoutData: ICreateAgentCashout,
   ): Promise<IAgentCashout> {
     const id = await generateUniqueId(this);
     const cashout = {
@@ -89,7 +89,7 @@ export class AgentCashoutsModel extends BaseModel {
   }
 
   async findByTransactionId(
-    transactionId: string
+    transactionId: string,
   ): Promise<IAgentCashout | null> {
     const sql = `SELECT * FROM ${this.tableName} WHERE transaction_id = ? LIMIT 1`;
     const results = await this.executeQuery(sql, [transactionId]);
@@ -98,23 +98,48 @@ export class AgentCashoutsModel extends BaseModel {
 
   async findByAgentId(
     agentId: string,
+    status?: CashoutStatus,
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
   ): Promise<IAgentCashout[]> {
-    const sql = `
+    let sql = `
       SELECT * FROM ${this.tableName}
       WHERE agent_id = ?
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
     `;
-    const results = await this.executeQuery(sql, [agentId, limit, offset]);
+    const params: any[] = [agentId];
+
+    if (status) {
+      sql += ` AND status = ?`;
+      params.push(status);
+    }
+
+    sql += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+    const results = await this.executeQuery(sql, params);
     return Array.isArray(results) ? results : [];
+  }
+
+  async countByAgentId(
+    agentId: string,
+    status?: CashoutStatus,
+  ): Promise<number> {
+    let sql = `SELECT COUNT(*) as count FROM ${this.tableName} WHERE agent_id = ?`;
+    const params: any[] = [agentId];
+
+    if (status) {
+      sql += ` AND status = ?`;
+      params.push(status);
+    }
+
+    const results = await this.executeQuery(sql, params);
+    return results[0]?.count || 0;
   }
 
   async findByRequesterId(
     requesterId: string,
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
   ): Promise<IAgentCashout[]> {
     const sql = `
       SELECT * FROM ${this.tableName}
@@ -138,7 +163,7 @@ export class AgentCashoutsModel extends BaseModel {
 
   async updateStatus(
     id: string,
-    status: CashoutStatus
+    status: CashoutStatus,
   ): Promise<IAgentCashout | null> {
     return await this.updateById(id, { status });
   }
@@ -146,7 +171,7 @@ export class AgentCashoutsModel extends BaseModel {
   async getTotalCommissionByAgent(
     agentId: string,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<number> {
     let sql = `
       SELECT COALESCE(SUM(commission), 0) as total

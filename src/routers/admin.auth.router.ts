@@ -1,11 +1,12 @@
 import { Router } from "express";
 import {
   adminLogin,
+  adminLogout,
   adminRegister,
   getAdminProfile,
 } from "../controllers/admin.auth.controller";
-import { adminAuth } from "../middleware/auth";
-import { validateRequest } from "../middleware/app/validateRequest";
+import { authenticateAdmin } from "../middleware/auth";
+import validateZodSchema from "../middleware/app/validateZodSchema";
 import {
   adminLoginSchema,
   createAdminSchema,
@@ -18,7 +19,18 @@ const adminAuthRouter = Router();
  * @desc    Admin login
  * @access  Public
  */
-adminAuthRouter.post("/login", validateRequest(adminLoginSchema), adminLogin);
+adminAuthRouter.post(
+  "/login",
+  validateZodSchema(adminLoginSchema, "body"),
+  adminLogin,
+);
+
+/**
+ * @route   POST /api/admin/logout
+ * @desc    Admin logout (invalidates all tokens)
+ * @access  Private (Admin)
+ */
+adminAuthRouter.post("/logout", authenticateAdmin, adminLogout);
 
 /**
  * @route   POST /api/admin/register
@@ -27,9 +39,9 @@ adminAuthRouter.post("/login", validateRequest(adminLoginSchema), adminLogin);
  */
 adminAuthRouter.post(
   "/register",
-  adminAuth,
-  validateRequest(createAdminSchema),
-  adminRegister
+  authenticateAdmin,
+  validateZodSchema(createAdminSchema, "body"),
+  adminRegister,
 );
 
 /**
@@ -37,6 +49,6 @@ adminAuthRouter.post(
  * @desc    Get current admin profile
  * @access  Private (Admin)
  */
-adminAuthRouter.get("/profile", adminAuth, getAdminProfile);
+adminAuthRouter.get("/profile", authenticateAdmin, getAdminProfile);
 
 export default adminAuthRouter;

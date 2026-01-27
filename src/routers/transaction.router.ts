@@ -5,8 +5,8 @@ import {
   getTransactionHistory,
   getTransactionDetails,
 } from "../controllers/transaction.controller";
-import { authenticateUser } from "../middleware/auth";
-import { validateRequest } from "../middleware/app/validateRequest";
+import { authenticateUser, authenticateConsumer } from "../middleware/auth";
+import validateZodSchema from "../middleware/app/validateZodSchema";
 import {
   addMoneySchema,
   sendMoneySchema,
@@ -16,43 +16,52 @@ import {
 
 const router = Router();
 
-// All routes require user authentication
-router.use(authenticateUser);
-
 /**
  * @route   POST /api/transactions/add-money
  * @desc    Add money to wallet from card
- * @access  Private (User)
+ * @access  Private (Consumer or Agent)
  */
-router.post("/add-money", validateRequest(addMoneySchema), addMoney);
+router.post(
+  "/add-money",
+  authenticateUser,
+  validateZodSchema(addMoneySchema, "body"),
+  addMoney,
+);
 
 /**
  * @route   POST /api/transactions/send-money
  * @desc    Send money to another user (P2P)
- * @access  Private (User)
+ * @access  Private (Consumer only)
  */
-router.post("/send-money", validateRequest(sendMoneySchema), sendMoney);
+router.post(
+  "/send-money",
+  authenticateConsumer,
+  validateZodSchema(sendMoneySchema, "body"),
+  sendMoney,
+);
 
 /**
  * @route   GET /api/transactions/history
  * @desc    Get user transaction history
- * @access  Private (User)
+ * @access  Private (Consumer or Agent)
  */
 router.get(
   "/history",
-  validateRequest(getTransactionHistorySchema),
-  getTransactionHistory
+  authenticateUser,
+  validateZodSchema(getTransactionHistorySchema, "query"),
+  getTransactionHistory,
 );
 
 /**
  * @route   GET /api/transactions/:id
  * @desc    Get transaction details
- * @access  Private (User)
+ * @access  Private (Consumer or Agent)
  */
 router.get(
   "/:id",
-  validateRequest(getTransactionDetailsSchema),
-  getTransactionDetails
+  authenticateUser,
+  validateZodSchema(getTransactionDetailsSchema, "params"),
+  getTransactionDetails,
 );
 
 export default router;

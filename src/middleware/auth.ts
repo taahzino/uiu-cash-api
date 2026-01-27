@@ -1,10 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import {
-  IAdminJWTPayload,
-  IUserJWTPayload,
-  verifyAdminToken,
-  verifyUserToken,
-} from "../utilities/jwt";
+import { JWTPayload, verifyToken } from "../utilities/jwt";
+import { Users } from "../models/Users.model";
+import { Admins } from "../models/Admins.model";
 import {
   sendResponse,
   STATUS_FORBIDDEN,
@@ -15,96 +12,106 @@ import {
 declare global {
   namespace Express {
     interface Request {
-      user?: IUserJWTPayload;
-    }
-    interface Locals {
-      admin?: IAdminJWTPayload;
+      user?: JWTPayload;
+      userType?: "Consumer" | "Agent" | "Admin";
     }
   }
 }
 
 /**
- * Middleware to authenticate user requests
- * Verifies JWT token and attaches user data to request
+ * Unified authentication middleware
+ * Validates JWT, checks database for matching id and public_key, and verifies userType
+ * @param allowedUserTypes - Array of allowed user types: "Consumer", "Agent", "Admin"
  */
-export const authenticateUser = (
-  req: Request,
-  res: Response,
-  next: NextFunction
+export const authenticate = (
+  ...allowedUserTypes: Array<"Consumer" | "Agent" | "Admin">
 ) => {
-  try {
-    const authHeader = req.headers.authorization;
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Extract token from Authorization header
+      const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return sendResponse(res, STATUS_UNAUTHORIZED, {
+          message:
+            "No token provided. Please include Authorization header with Bearer token.",
+        });
+      }
+
+      const token = authHeader.substring(7); // Remove "Bearer " prefix
+
+      // Verify and decode JWT
+      let decoded: JWTPayload;
+      try {
+        decoded = verifyToken(token);
+      } catch (error: any) {
+        return sendResponse(res, STATUS_UNAUTHORIZED, {
+          message: "Invalid or expired token. Please login again.",
+        });
+      }
+
+      // Check if userType is allowed
+      if (!allowedUserTypes.includes(decoded.userType)) {
+        return sendResponse(res, STATUS_FORBIDDEN, {
+          message: `Access denied. This endpoint requires ${allowedUserTypes.join(" or ")} access.`,
+        });
+      }
+
+      // Validate against database based on userType
+      let isValid = false;
+
+      if (decoded.userType === "Admin") {
+        // Check admin in database
+        const admin = await Admins.findById(decoded.id);
+        if (
+          admin &&
+          admin.public_key === decoded.public_key &&
+          admin.status === "ACTIVE"
+        ) {
+          isValid = true;
+        }
+      } else if (
+        decoded.userType === "Consumer" ||
+        decoded.userType === "Agent"
+      ) {
+        // Check user in database
+        const user = await Users.findById(decoded.id);
+        if (user && user.public_key === decoded.public_key) {
+          // For Agent, also verify role matches
+          if (decoded.userType === "Agent" && user.role !== "AGENT") {
+            isValid = false;
+          } else if (
+            decoded.userType === "Consumer" &&
+            user.role !== "CONSUMER"
+          ) {
+            isValid = false;
+          } else if (user.status === "ACTIVE") {
+            isValid = true;
+          }
+        }
+      }
+
+      if (!isValid) {
+        return sendResponse(res, STATUS_UNAUTHORIZED, {
+          message: "Invalid session. Please login again.",
+        });
+      }
+
+      // Attach decoded user data to request
+      req.user = decoded;
+      req.userType = decoded.userType;
+      next();
+    } catch (error: any) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
-        message: "No token provided",
+        message: error.message || "Authentication failed",
       });
     }
-
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
-    const decoded = verifyUserToken(token);
-
-    req.user = decoded;
-    next();
-  } catch (error: any) {
-    return sendResponse(res, STATUS_UNAUTHORIZED, {
-      message: error.message || "Invalid or expired token",
-    });
-  }
-};
-
-/**
- * Middleware to check if user has specific role(s)
- * Must be used after authenticateUser middleware
- */
-export const authorizeUserRole = (
-  ...allowedRoles: Array<"PERSONAL" | "AGENT">
-) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return sendResponse(res, STATUS_UNAUTHORIZED, {
-        message: "Authentication required",
-      });
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      return sendResponse(res, STATUS_FORBIDDEN, {
-        message: "Access denied. Insufficient permissions.",
-      });
-    }
-
-    next();
   };
 };
 
-/**
- * Combined middleware for admin authentication and authorization
- * Verifies JWT token and ensures admin is authenticated
- */
-export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return sendResponse(res, STATUS_UNAUTHORIZED, {
-        message: "No token provided",
-      });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = verifyAdminToken(token);
-
-    if (!decoded) {
-      return sendResponse(res, STATUS_UNAUTHORIZED, {
-        message: "Admin authentication required",
-      });
-    }
-
-    res.locals.admin = decoded;
-    next();
-  } catch (error: any) {
-    return sendResponse(res, STATUS_UNAUTHORIZED, {
-      message: error.message || "Invalid or expired admin token",
-    });
-  }
-};
+// Convenience exports for common use cases
+export const authenticateConsumer = authenticate("Consumer");
+export const authenticateAgent = authenticate("Agent");
+export const authenticateAdmin = authenticate("Admin");
+export const authenticateUser = authenticate("Consumer", "Agent");
+export const authenticateAny = authenticate("Consumer", "Agent", "Admin");

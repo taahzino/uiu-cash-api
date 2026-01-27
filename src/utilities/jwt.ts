@@ -1,68 +1,63 @@
 import jwt from "jsonwebtoken";
-
-// Get secrets from environment variables
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-this";
-const JWT_ADMIN_SECRET =
-  process.env.JWT_ADMIN_SECRET || "your-admin-secret-change-this";
-
-const TOKEN_EXPIRY = "3h"; // 3 hours
+import fs from "fs";
+import path from "path";
 
 /**
- * User JWT Payload Interface
+ * JWT Payload Interface
  */
-export interface IUserJWTPayload {
-  userId: string;
-  email: string;
-  role: "PERSONAL" | "AGENT";
-  sessionId?: string;
+export interface JWTPayload {
+  id: string;
+  public_key: string;
+  userType: "Consumer" | "Agent" | "Admin";
 }
 
 /**
- * Admin JWT Payload Interface
+ * Get private key from file
  */
-export interface IAdminJWTPayload {
-  adminId: string;
-  email: string;
-  sessionId?: string;
+function getPrivateKey(): string {
+  const privateKeyPath = path.join(__dirname, "../../private.pem");
+  return fs.readFileSync(privateKeyPath, "utf8");
 }
 
 /**
- * Generate JWT token for user
+ * Get public key from file
  */
-export function generateUserToken(payload: IUserJWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: TOKEN_EXPIRY,
-  });
+function getPublicKey(): string {
+  const publicKeyPath = path.join(__dirname, "../../public.pem");
+  return fs.readFileSync(publicKeyPath, "utf8");
 }
 
 /**
- * Generate JWT token for admin
+ * Generate unified JWT token for all user types
  */
-export function generateAdminToken(payload: IAdminJWTPayload): string {
-  return jwt.sign(payload, JWT_ADMIN_SECRET, {
-    expiresIn: TOKEN_EXPIRY,
-  });
+export function generateToken(
+  userId: string,
+  public_key: string,
+  userType: "Consumer" | "Agent" | "Admin",
+): string {
+  const privateKey = getPrivateKey();
+
+  return jwt.sign(
+    { id: userId, public_key, userType } as JWTPayload,
+    privateKey,
+    {
+      algorithm: "RS256",
+      expiresIn: "7d",
+    },
+  );
 }
 
 /**
- * Verify user JWT token
+ * Verify JWT token
  */
-export function verifyUserToken(token: string): IUserJWTPayload {
+export function verifyToken(token: string): JWTPayload {
   try {
-    return jwt.verify(token, JWT_SECRET) as IUserJWTPayload;
+    const publicKey = getPublicKey();
+    return jwt.verify(token, publicKey, {
+      algorithms: ["RS256"],
+    }) as JWTPayload;
   } catch (error) {
     throw new Error("Invalid or expired token");
-  }
-}
-
-/**
- * Verify admin JWT token
- */
-export function verifyAdminToken(token: string): IAdminJWTPayload {
-  try {
-    return jwt.verify(token, JWT_ADMIN_SECRET) as IAdminJWTPayload;
-  } catch (error) {
-    throw new Error("Invalid or expired admin token");
   }
 }
 

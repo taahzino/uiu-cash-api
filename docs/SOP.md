@@ -37,10 +37,9 @@
 11. [Development Workflow](#11-development-workflow)
 12. [Compliance & Regulatory Standards](#12-compliance--regulatory-standards)
 
-
-15. [Risk Management](#15-risk-management)
-16. [Project Timeline & Milestones](#16-project-timeline--milestones)
-17. [References & Resources](#17-references--resources)
+13. [Risk Management](#15-risk-management)
+14. [Project Timeline & Milestones](#16-project-timeline--milestones)
+15. [References & Resources](#17-references--resources)
 
 ---
 
@@ -56,7 +55,7 @@ To create a robust, database-driven digital finance system that enables seamless
 
 ### 1.3 Key Objectives
 
-- Develop a multi-role financial platform supporting Personal, Agent, and Admin users
+- Develop a multi-role financial platform supporting Consumer, Agent, and Admin users
 - Implement secure peer-to-peer (P2P) money transfer capabilities
 - Enable cash-in and cash-out operations through agent networks
 - Maintain real-time transaction ledgers with double-entry accounting
@@ -69,7 +68,7 @@ To create a robust, database-driven digital finance system that enables seamless
 
 - User registration with email/phone verification
 - Digital wallet management
-- P2P transfers (Personal to Personal)
+- P2P transfers (Consumer to Consumer)
 - Agent-based cash-out operations
 - Mock debit card integration for adding money
 - Settlement bank account simulation
@@ -99,7 +98,7 @@ To create a robust, database-driven digital finance system that enables seamless
 
 **User Management:**
 
-- FR-001: System shall support three distinct user roles (Personal, Agent, Admin)
+- FR-001: System shall support three distinct user roles (Consumer, Agent, Admin)
 - FR-002: System shall implement secure registration with email/phone verification
 - FR-003: System shall maintain user profile with status tracking (Active, Suspended, Pending)
 - FR-004: System shall support role-based access control (RBAC)
@@ -168,11 +167,11 @@ To create a robust, database-driven digital finance system that enables seamless
 
 ### 2.2 Success Criteria
 
-| **Criteria**                   | **Target**     | **Measurement Method**           |
-| ------------------------------ | -------------- | -------------------------------- |
-| User Registration Success Rate | > 95%          | Registration completion tracking |
-| User Satisfaction Score        | > 4.5/5        | User feedback surveys            |
-| Security Incidents             | 0 critical     | Security audit logs              |
+| **Criteria**                   | **Target** | **Measurement Method**           |
+| ------------------------------ | ---------- | -------------------------------- |
+| User Registration Success Rate | > 95%      | Registration completion tracking |
+| User Satisfaction Score        | > 4.5/5    | User feedback surveys            |
+| Security Incidents             | 0 critical | Security audit logs              |
 
 ---
 
@@ -255,12 +254,12 @@ class TransactionService {
   async sendMoney(
     from: string,
     to: string,
-    amount: number
+    amount: number,
   ): Promise<Transaction>;
   async cashOut(
     userId: string,
     agentId: string,
-    amount: number
+    amount: number,
   ): Promise<Transaction>;
 }
 ```
@@ -508,8 +507,7 @@ uiu-cash/
 │   ├── migrations/
 │   ├── seeders/
 │   └── schema.sql
-├── docs/                   # Documentation
-└── docker-compose.yml     # Docker setup
+└── docs/                   # Documentation
 ```
 
 ---
@@ -564,7 +562,7 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     phone VARCHAR(20) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('PERSONAL', 'AGENT') NOT NULL,
+    role ENUM('CONSUMER', 'AGENT') NOT NULL,
     status ENUM('PENDING', 'ACTIVE', 'SUSPENDED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
@@ -901,8 +899,8 @@ INSERT INTO system_config (config_key, config_value, description) VALUES
 ('bank_transfer_fee_percentage', '1.50', 'Percentage fee for bank transfer transactions (e.g., 1.50 for 1.5%)'),
 ('bank_transfer_min_fee', '10.00', 'Minimum fee for bank transfer transactions (in BDT)'),
 ('max_transaction_limit', '25000.00', 'Maximum amount per single transaction (in BDT)'),
-('personal_daily_limit', '50000.00', 'Daily transaction limit for personal users (in BDT)'),
-('personal_monthly_limit', '200000.00', 'Monthly transaction limit for personal users (in BDT)'),
+('consumer_daily_limit', '50000.00', 'Daily transaction limit for personal users (in BDT)'),
+('consumer_monthly_limit', '200000.00', 'Monthly transaction limit for personal users (in BDT)'),
 ('agent_daily_limit', '100000.00', 'Daily transaction limit for agent users (in BDT)'),
 ('agent_monthly_limit', '500000.00', 'Monthly transaction limit for agent users (in BDT)'),
 ('min_wallet_balance', '0.00', 'Minimum wallet balance that must be maintained (in BDT)'),
@@ -969,7 +967,7 @@ CREATE TRIGGER trigger_create_wallet
 AFTER INSERT ON users
 FOR EACH ROW
 BEGIN
-    IF NEW.role IN ('PERSONAL', 'AGENT') THEN
+    IF NEW.role IN ('CONSUMER', 'AGENT') THEN
         INSERT INTO wallets (id, user_id, balance, available_balance)
         VALUES (UUID(), NEW.id, 0.00, 0.00);
     END IF;
@@ -1000,8 +998,6 @@ DELIMITER ;
 ### 5.5 Database Indexes Strategy
 
 #### 5.5.1 Database Indexes
-
-
 
 ```bash
 #!/bin/bash
@@ -1042,7 +1038,7 @@ Security is the cornerstone of the UIU Cash platform. The system implements defe
 interface JWTPayload {
   userId: string;
   email: string;
-  role: "PERSONAL" | "AGENT";
+  role: "CONSUMER" | "AGENT";
   sessionId: string;
   iat: number; // Issued at
   exp: number; // Expires at (3 hours)
@@ -1079,7 +1075,7 @@ async function hashPassword(password: string): Promise<string> {
 
 async function verifyPassword(
   password: string,
-  hash: string
+  hash: string,
 ): Promise<boolean> {
   return await bcrypt.compare(password, hash);
 }
@@ -1098,7 +1094,7 @@ async function verifyPassword(
 
 **Permission Matrix**
 
-| **Feature**           | **Personal** | **Agent** | **Admin** |
+| **Feature**           | **Consumer** | **Agent** | **Admin** |
 | --------------------- | ------------ | --------- | --------- |
 | View Own Wallet       | ✅           | ✅        | ✅        |
 | Send Money            | ✅           | ❌        | ❌        |
@@ -1138,12 +1134,9 @@ router.post(
   "/admin/approve-agent",
   authenticate,
   authorize("ADMIN"),
-  approveAgentController
+  approveAgentController,
 );
 ```
-
-
-
 
 ```sql
 
@@ -1152,7 +1145,6 @@ INSERT INTO users (nid_number)
 FROM users;
 
 ```
-
 
 - **HSTS**: HTTP Strict Transport Security enabled
 - **Certificate Pinning**: For mobile apps
@@ -1182,7 +1174,7 @@ app.use(
         imgSrc: ["'self'", "data:", "https:"],
       },
     },
-  })
+  }),
 );
 
 // HTTPS server
@@ -1266,7 +1258,8 @@ export const validateRequest = (schema: AnyZodObject) => {
 - `src/validators/admin.auth.validator.ts` - Admin authentication schemas
 - `src/validators/user.management.validator.ts` - User management schemas
 - `src/validators/system.config.validator.ts` - System configuration schemas
-```
+
+````
 
 #### 6.4.3 CORS Configuration
 
@@ -1285,7 +1278,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-```
+````
 
 #### 6.4.4 SQL Injection Prevention
 
@@ -1336,7 +1329,7 @@ interface TransactionPIN {
 
 async function verifyTransactionPIN(
   userId: string,
-  pin: string
+  pin: string,
 ): Promise<boolean> {
   const pinData = await getPINData(userId);
 
@@ -1389,7 +1382,7 @@ async function processTransaction(req: Request): Promise<Transaction> {
 
 ```typescript
 const TRANSACTION_LIMITS = {
-  PERSONAL: {
+  CONSUMER: {
     MAX_PER_TRANSACTION: 25000,
     MAX_DAILY: 50000,
     MAX_MONTHLY: 200000,
@@ -1424,7 +1417,7 @@ async function detectFraud(transaction: Transaction): Promise<FraudScore> {
 
   // Check location
   const lastLocation = await getLastTransactionLocation(transaction.senderId);
-    riskScore += 45;
+  riskScore += 45;
 
   return {
     score: riskScore,
@@ -1438,7 +1431,7 @@ async function detectFraud(transaction: Transaction): Promise<FraudScore> {
 
 ### 7.1 Role Definitions
 
-#### 7.1.1 Personal User
+#### 7.1.1 Consumer User
 
 **Description**: Individual users using the platform for personal financial transactions.
 
@@ -1547,9 +1540,9 @@ async function detectFraud(transaction: Transaction): Promise<FraudScore> {
    ↓
 5. User verifies email/phone
    ↓
-6. System creates wallet (for PERSONAL and AGENT)
+6. System creates wallet (for CONSUMER and AGENT)
    ↓
-7. System credits onboarding bonus (PERSONAL only)
+7. System credits onboarding bonus (CONSUMER only)
    ↓
 8. User status updated to ACTIVE
    ↓
@@ -1559,7 +1552,7 @@ async function detectFraud(transaction: Transaction): Promise<FraudScore> {
 #### 7.2.2 Agent Account Approval Flow
 
 ```
-1. User registers as Personal or Agent
+1. User registers as Consumer or Agent
 #### 7.2.2 Agent Account Approval Flow
 
 ```
@@ -1572,15 +1565,15 @@ async function detectFraud(transaction: Transaction): Promise<FraudScore> {
    - NID number
      ↓
 3. Admin verifies information
-     ↓
+   ↓
 4. Admin approves/rejects
-     ↓
+   ↓
 5. If approved:
    - Status → ACTIVE
    - Agent code generated
    - Float balance initialized
      ↓
-7. Agent can start operations
+6. Agent can start operations
 
 ````
 
@@ -1604,7 +1597,7 @@ async function detectFraud(transaction: Transaction): Promise<FraudScore> {
   "firstName": "John",
   "lastName": "Doe",
   "dateOfBirth": "1995-01-15",
-  "role": "PERSONAL",
+  "role": "CONSUMER",
   "nidNumber": "1234567890",
   "agreeToTerms": true
 }
@@ -1660,7 +1653,7 @@ async function detectFraud(transaction: Transaction): Promise<FraudScore> {
       "email": "user@example.com",
       "firstName": "John",
       "lastName": "Doe",
-      "role": "PERSONAL",
+      "role": "CONSUMER",
       "walletBalance": 1500.0
     }
   }
@@ -1741,6 +1734,7 @@ async function detectFraud(transaction: Transaction): Promise<FraudScore> {
   - Values: PENDING, PROCESSING, COMPLETED, FAILED
 
 **Example Request**:
+
 ```
 GET /api/transactions/history?page=1&limit=20&type=SEND_MONEY&status=COMPLETED
 ```
@@ -1778,6 +1772,7 @@ GET /api/transactions/history?page=1&limit=20&type=SEND_MONEY&status=COMPLETED
 ```
 
 **Business Logic**:
+
 1. Authenticate user
 2. Validate pagination parameters
 3. Apply optional filters (type, status)
@@ -1791,9 +1786,11 @@ GET /api/transactions/history?page=1&limit=20&type=SEND_MONEY&status=COMPLETED
 **Headers**: `Authorization: Bearer <token>`
 
 **Path Parameters**:
+
 - `id`: Transaction ID (8 characters)
 
 **Example Request**:
+
 ```
 GET /api/transactions/TRX20251228001
 ```
@@ -1835,6 +1832,7 @@ GET /api/transactions/TRX20251228001
 ```
 
 **Business Logic**:
+
 1. Authenticate user
 2. Fetch transaction by ID
 3. Verify user is authorized (must be sender or receiver)
@@ -1843,8 +1841,10 @@ GET /api/transactions/TRX20251228001
 6. Return full transaction details
 
 **Authorization**:
+
 - User can only view transactions where they are the sender OR receiver
 - Returns 403 Forbidden if user tries to access unauthorized transaction
+
 ```
 
 ### 8.4 Send Money (P2P Transfer)
@@ -1852,6 +1852,7 @@ GET /api/transactions/TRX20251228001
 #### 8.4.1 Send Money Flow
 
 ```
+
 User A wants to send ৳500 to User B
 
 1. User A initiates send money request
@@ -1861,7 +1862,7 @@ User A wants to send ৳500 to User B
    - Recipient exists by email or phone
    - Recipient is ACTIVE and wallet is ACTIVE
    - Sender ≠ Recipient
-   ↓
+     ↓
 3. System calculates fee (configurable, default ৳5)
    Total deduction: ৳505
    ↓
@@ -1869,21 +1870,22 @@ User A wants to send ৳500 to User B
    - Sufficient balance (৳505)
    - Daily limit not exceeded (default ৳50,000)
    - Monthly limit not exceeded (default ৳200,000)
-   ↓
+     ↓
 5. System begins database transaction:
    a. Debit ৳505 from User A wallet
    b. Credit ৳500 to User B wallet
    c. Create transaction record (type: SEND_MONEY, status: PENDING → PROCESSING → COMPLETED)
    d. Create ledger entries (double-entry):
-      - DEBIT entry for sender (৳505)
-      - CREDIT entry for receiver (৳500)
-   e. Platform wallet receives ৳5 fee
-   f. Update sender's daily spending
-   ↓
+   - DEBIT entry for sender (৳505)
+   - CREDIT entry for receiver (৳500)
+     e. Platform wallet receives ৳5 fee
+     f. Update sender's daily spending
+     ↓
 6. System commits transaction
    ↓
 7. Transaction complete
-```
+
+````
 
 **API Endpoint**: `POST /api/transactions/send-money`
 
@@ -1898,9 +1900,10 @@ User A wants to send ৳500 to User B
   "description": "Payment for services",
   "pin": "1234"
 }
-```
+````
 
 **Validation Rules**:
+
 - Recipient Identifier: Email or phone number (BD format: +8801XXXXXXXXX)
 - Amount: ৳10 - ৳25,000 per transaction
 - Description: Optional, max 200 characters
@@ -1952,15 +1955,18 @@ User A wants to send ৳500 to User B
 18. Return transaction details
 
 **Fee Structure**:
+
 - Send Money Fee: ৳5.00 (flat fee, configurable via system config)
 - Fee goes to platform wallet
 - Recipient receives full amount (sender pays the fee)
 
 **Daily/Monthly Limits** (per user):
+
 - Daily Limit: ৳50,000
 - Monthly Limit: ৳200,000
 - Limits tracked via wallet spending fields
-```
+
+````
 
 ### 8.5 Add Money (Debit/Credit Card)
 
@@ -1981,9 +1987,10 @@ User A wants to send ৳500 to User B
   "expiryYear": "28",
   "cardHolderName": "Ahmed Hassan"
 }
-```
+````
 
 **Validation Rules**:
+
 - Amount: ৳50 - ৳25,000 per transaction
 - Card Number: 16 digits
 - CVV: 3 digits
@@ -2047,12 +2054,14 @@ User A wants to send ৳500 to User B
 6. Return transaction details with card and bank info
 
 **Card to Bank Account Mapping**:
+
 - Each bank account has a linked debit/credit card
 - Card details stored in bank account simulation
 - Card number uniquely identifies the bank account
 - CVV and expiry validation before processing
 
 **Bank Account Simulation**:
+
 - Located in `/simulation/bank_accounts/`
 - 20 dummy bank accounts with linked cards
 - JSON file-based persistence
@@ -2060,6 +2069,7 @@ User A wants to send ৳500 to User B
 - Test cards include VISA and MASTERCARD types
 
 **Error Scenarios**:
+
 - Card not found in simulation
 - Invalid CVV
 - Card expired
@@ -2068,6 +2078,7 @@ User A wants to send ৳500 to User B
 - User account not active
 
 **Note**: No fees are charged for adding money to wallet. The amount debited from bank equals amount credited to wallet.
+
 ```
 
 ### 8.6 Cash Out via Agents
@@ -2075,6 +2086,7 @@ User A wants to send ৳500 to User B
 #### 8.6.1 Cash Out Flow
 
 ```
+
 User wants to withdraw ৳2000 cash from Agent
 
 1. User selects agent or enters agent code
@@ -2085,29 +2097,30 @@ User wants to withdraw ৳2000 cash from Agent
    - Cash out fee: ৳37 (1.85%)
    - Agent commission: ৳15 (0.75%)
    - Total deduction from user: ৳2037
-   ↓
+     ↓
 4. System validates:
    - User has sufficient balance
    - Agent has sufficient float
    - Agent is active
-   ↓
+     ↓
 5. User enters transaction PIN
    ↓
    ↓
    ↓
    ↓
    ↓
-    ↓
-11. System processes transaction:
-    - Debit ৳2037 from user wallet
-    - Debit ৳2000 from agent float
-    - Credit ৳15 commission to agent wallet
-    - Update settlement account (-৳2000)
-    ↓
-12. Agent hands over ৳2000 cash to user
-    ↓
-13. Transaction complete
-```
+   ↓
+6. System processes transaction:
+   - Debit ৳2037 from user wallet
+   - Debit ৳2000 from agent float
+   - Credit ৳15 commission to agent wallet
+   - Update settlement account (-৳2000)
+     ↓
+7. Agent hands over ৳2000 cash to user
+   ↓
+8. Transaction complete
+
+````
 
 **API Endpoint (User)**: `POST /api/transactions/cash-out/initiate`
 
@@ -2119,7 +2132,7 @@ User wants to withdraw ৳2000 cash from Agent
   "amount": 2000.0,
   "transactionPin": "123456"
 }
-```
+````
 
 **Response**:
 
@@ -2146,7 +2159,7 @@ User wants to withdraw ৳2000 cash from Agent
 
 ```json
 {
-  "cashoutId": "uuid",
+  "cashoutId": "uuid"
 }
 ```
 
@@ -2494,7 +2507,7 @@ ASSETS
 
 LIABILITIES
 ├── User Wallets Payable (2000)
-│   ├── Personal User Wallets (2001)
+│   ├── Consumer User Wallets (2001)
 │   ├── Agent User Wallets (2002)
 │   └── Agent Wallets (2003)
 └── Commission Payable (2100)
@@ -2696,7 +2709,7 @@ async function performDailyReconciliation() {
 ```typescript
 async function calculateTransactionFee(
   type: TransactionType,
-  amount: number
+  amount: number,
 ): Promise<number> {
   const config = await SystemConfig.findAll();
   const configMap = new Map(config.map((c) => [c.configKey, c.configValue]));
@@ -2707,7 +2720,7 @@ async function calculateTransactionFee(
 
     case "CASH_OUT":
       const percentage = parseFloat(
-        configMap.get("CASH_OUT_FEE_PERCENTAGE") || "1.85"
+        configMap.get("CASH_OUT_FEE_PERCENTAGE") || "1.85",
       );
       return (amount * percentage) / 100;
 
@@ -2727,7 +2740,7 @@ async function calculateTransactionFee(
 
 ### 9.5 Transaction Limits
 
-#### 9.5.1 Personal User Limits
+#### 9.5.1 Consumer User Limits
 
 | **Limit Type**  | **Amount** |
 | --------------- | ---------- |
@@ -2748,7 +2761,7 @@ async function calculateTransactionFee(
 ```typescript
 async function checkTransactionLimits(
   userId: string,
-  amount: number
+  amount: number,
 ): Promise<void> {
   const user = await User.findByPk(userId);
   const wallet = await Wallet.findOne({ where: { userId } });
@@ -2759,7 +2772,7 @@ async function checkTransactionLimits(
   // Check per-transaction limit
   if (amount > limits.MAX_PER_TRANSACTION) {
     throw new Error(
-      `Transaction exceeds maximum limit of ৳${limits.MAX_PER_TRANSACTION}`
+      `Transaction exceeds maximum limit of ৳${limits.MAX_PER_TRANSACTION}`,
     );
   }
 
@@ -3052,10 +3065,7 @@ Fixes #123
     }
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write",
-    ]
+    "*.{ts,tsx}": ["eslint --fix", "prettier --write"]
   }
 }
 ```
@@ -3075,7 +3085,6 @@ DATABASE_URL=mysql://root:password@localhost:3306/uiu_cash_dev
 DB_LOGGING=true
 
 # JWT
-JWT_SECRET=dev-secret-change-in-production
 JWT_ADMIN_SECRET=dev-admin-secret-change-in-production
 JWT_EXPIRES_IN=3h
 
@@ -3118,8 +3127,9 @@ cp .env.example .env
 # Edit .env with your local configuration
 
 # 4. Start MySQL
-# Using Docker
-docker-compose up -d mysql
+mysql.server start
+# Or if using Homebrew on macOS: brew services start mysql
+# Or on Linux: sudo systemctl start mysql
 
 # 5. Run database migrations
 npm run migrate
@@ -3138,42 +3148,6 @@ npm run dev
 cd ../admin
 npm install
 npm run dev
-```
-
-#### 11.4.2 Docker Compose Setup
-
-```yaml
-# docker-compose.yml
-version: "3.8"
-
-services:
-  mysql:
-    image: mysql:8.0
-    environment:
-      MYSQL_DATABASE: uiu_cash_dev
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_USER: uiu_user
-      MYSQL_PASSWORD: password
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
-
-  backend:
-    build: ./backend
-    ports:
-      - "5000:5000"
-    environment:
-      - NODE_ENV=development
-    depends_on:
-      - mysql
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-
-volumes:
-  mysql_data:
 ```
 
 ---
@@ -3228,7 +3202,7 @@ async function deleteUserData(userId: string): Promise<void> {
         nidNumber: null,
         deletedAt: new Date(),
       },
-      { where: { id: userId }, transaction: t }
+      { where: { id: userId }, transaction: t },
     );
 
     // Keep transaction records for legal/audit purposes
@@ -3239,17 +3213,16 @@ async function deleteUserData(userId: string): Promise<void> {
 
 #### 14.1.2 Data Retention Policy
 
-| **Data Type**       | **Retention Period**          | **Rationale**             |
-| ------------------- | ----------------------------- | ------------------------- |
-| Transaction Records | 7 years                       | Legal/tax requirements    |
-| Audit Logs          | 3 years                       | Security and compliance   |
-| User Personal Data  | Duration of account + 1 year  | Service delivery          |
-| Error Logs          | 1 year                        | Debugging and improvement |
+| **Data Type**       | **Retention Period**         | **Rationale**             |
+| ------------------- | ---------------------------- | ------------------------- |
+| Transaction Records | 7 years                      | Legal/tax requirements    |
+| Audit Logs          | 3 years                      | Security and compliance   |
+| User Consumer Data  | Duration of account + 1 year | Service delivery          |
+| Error Logs          | 1 year                       | Debugging and improvement |
 
 ### 14.2 Financial Regulations
 
 #### 14.2.1 Anti-Money Laundering (AML)
-
 
 ```typescript
 interface AMLRule {
@@ -3287,7 +3260,7 @@ const AML_RULES: AMLRule[] = [
 ];
 
 async function checkAMLCompliance(
-  transaction: Transaction
+  transaction: Transaction,
 ): Promise<AMLCheckResult> {
   const triggeredRules: AMLRule[] = [];
 
@@ -3303,7 +3276,7 @@ async function checkAMLCompliance(
 
   const highestRisk = triggeredRules.reduce(
     (max, rule) => (rule.riskLevel > max ? rule.riskLevel : max),
-    "LOW"
+    "LOW",
   );
 
   const shouldBlock = triggeredRules.some((rule) => rule.action === "BLOCK");
@@ -3406,13 +3379,13 @@ async function generateComplianceReport(
 
 ### 15.1 Risk Assessment Matrix
 
-| **Risk ID** | **Risk Description**                   | **Category**   | **Probability** | **Impact** | **Risk Level** | **Mitigation Strategy**                           |
-| ----------- | -------------------------------------- | -------------- | --------------- | ---------- | -------------- | ------------------------------------------------- |
-| R-004       | Third-party service failure            | Operational    | Medium          | Medium     | Medium         | Fallback mechanisms, SLA agreements   |
-| R-005       | Regulatory non-compliance              | Compliance     | Low             | Critical   | High           | Regular compliance audits, legal consultation     |
-| R-006       | Fraud/money laundering                 | Financial      | Medium          | High       | High           | Fraud detection rules      |
-| R-007       | Server hardware failure                | Technical      | Low             | High       | Medium         | Redundancy, auto-failover, cloud infrastructure   |
-| R-009       | Budget overrun                         | Financial      | Medium          | Medium     | Medium         | Regular budget reviews, scope management          |
+| **Risk ID** | **Risk Description**        | **Category** | **Probability** | **Impact** | **Risk Level** | **Mitigation Strategy**                         |
+| ----------- | --------------------------- | ------------ | --------------- | ---------- | -------------- | ----------------------------------------------- |
+| R-004       | Third-party service failure | Operational  | Medium          | Medium     | Medium         | Fallback mechanisms, SLA agreements             |
+| R-005       | Regulatory non-compliance   | Compliance   | Low             | Critical   | High           | Regular compliance audits, legal consultation   |
+| R-006       | Fraud/money laundering      | Financial    | Medium          | High       | High           | Fraud detection rules                           |
+| R-007       | Server hardware failure     | Technical    | Low             | High       | Medium         | Redundancy, auto-failover, cloud infrastructure |
+| R-009       | Budget overrun              | Financial    | Medium          | Medium     | Medium         | Regular budget reviews, scope management        |
 
 **Risk Level Calculation**:
 
@@ -3483,7 +3456,7 @@ async function calculateFraudScore(transaction: Transaction): Promise<number> {
   // Check 3: New recipient
   const isNewRecipient = await isFirstTimeRecipient(
     transaction.senderId,
-    transaction.receiverId
+    transaction.receiverId,
   );
   if (isNewRecipient && transaction.amount > 10000) score += 20;
 
@@ -3560,7 +3533,6 @@ async function applyFraudPrevention(transaction: Transaction) {
 - Database replication (master-slave)
 - Transaction logging before processing
 
-
 ```bash
 #!/bin/bash
 
@@ -3606,12 +3578,10 @@ async function applyFraudPrevention(transaction: Transaction) {
 **Disaster Scenarios**:
 
 1. **Complete Data Center Failure**
-
    - Update DNS records
    - Estimated recovery: 2-4 hours
 
 2. **Database Corruption**
-
    - Switch to read replica
    - Verify data integrity
    - Resume normal operations
@@ -3670,7 +3640,7 @@ class IncidentManager {
     resolution: {
       rootCause: string;
       preventiveMeasures: string;
-    }
+    },
   ) {
     await Incident.update(
       {
@@ -3678,7 +3648,7 @@ class IncidentManager {
         rootCause: resolution.rootCause,
         preventiveMeasures: resolution.preventiveMeasures,
       },
-      { where: { id: incidentId } }
+      { where: { id: incidentId } },
     );
 
     // Send post-mortem report
@@ -3744,17 +3714,17 @@ Phase 4: Admin & Offers (Weeks 14-16)
 
 #### 16.2.2 Phase 2: Core Features (Weeks 5-10)
 
-| **Task**                          | **Duration** | **Assignee** | **Deliverable**               |
-| --------------------------------- | ------------ | ------------ | ----------------------------- |
-| Wallet model & APIs               | 3 days       | Saif         | Wallet CRUD APIs              |
-| Balance management logic          | 2 days       | Saif         | Balance update functions      |
-| Send Money feature                | 5 days       | Tahsin       | Send money API                |
-| Transaction ledger (double-entry) | 4 days       | Forhad       | Ledger system                 |
-| Add Money (mock card)             | 3 days       | Saif         | Add money API                 |
-| Cash Out initiate API             | 3 days       | Tahsin       | Cash out request API          |
-| Transaction history API           | 2 days       | Saif         | History with pagination       |
-| Statement generation (PDF)        | 3 days       | Forhad       | PDF export feature            |
-| Fee calculation engine            | 3 days       | Tahsin       | Dynamic fee calculator        |
+| **Task**                          | **Duration** | **Assignee** | **Deliverable**          |
+| --------------------------------- | ------------ | ------------ | ------------------------ |
+| Wallet model & APIs               | 3 days       | Saif         | Wallet CRUD APIs         |
+| Balance management logic          | 2 days       | Saif         | Balance update functions |
+| Send Money feature                | 5 days       | Tahsin       | Send money API           |
+| Transaction ledger (double-entry) | 4 days       | Forhad       | Ledger system            |
+| Add Money (mock card)             | 3 days       | Saif         | Add money API            |
+| Cash Out initiate API             | 3 days       | Tahsin       | Cash out request API     |
+| Transaction history API           | 2 days       | Saif         | History with pagination  |
+| Statement generation (PDF)        | 3 days       | Forhad       | PDF export feature       |
+| Fee calculation engine            | 3 days       | Tahsin       | Dynamic fee calculator   |
 
 **Phase 2 Exit Criteria**:
 
@@ -3796,4 +3766,3 @@ Phase 4: Admin & Offers (Weeks 14-16)
 - ✅ Offer system functional
 - ✅ System configuration works
 - ✅ Analytics dashboard complete
-

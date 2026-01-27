@@ -78,7 +78,7 @@ export const getConfigByKey = async (req: Request, res: Response) => {
 export const createOrUpdateConfig = async (req: Request, res: Response) => {
   try {
     const { key, value, description } = req.body;
-    const adminId = res.locals.admin?.adminId;
+    const adminId = res.locals.admin?.id;
 
     // Check if config exists
     const existingConfig = await SystemConfig.findByKey(key);
@@ -135,7 +135,7 @@ export const updateConfig = async (req: Request, res: Response) => {
   try {
     const { key } = req.params;
     const { value, description } = req.body;
-    const adminId = res.locals.admin?.adminId;
+    const adminId = res.locals.admin?.id;
 
     if (!value) {
       return sendResponse(res, STATUS_BAD_REQUEST, {

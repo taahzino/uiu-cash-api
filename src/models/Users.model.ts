@@ -5,7 +5,7 @@ import { BaseModel } from "./BaseModel";
  * User Role Enum
  */
 export enum UserRole {
-  PERSONAL = "PERSONAL",
+  CONSUMER = "CONSUMER",
   AGENT = "AGENT",
 }
 
@@ -27,6 +27,7 @@ export interface IUser {
   email: string;
   phone: string;
   password_hash: string;
+  public_key: string;
   role: UserRole;
   status: UserStatus;
   first_name: string;
@@ -47,6 +48,7 @@ export interface ICreateUser {
   email: string;
   phone: string;
   password_hash: string;
+  public_key: string;
   role: UserRole;
   status?: UserStatus;
   first_name: string;
@@ -64,6 +66,7 @@ export interface IUpdateUser {
   email?: string;
   phone?: string;
   password_hash?: string;
+  public_key?: string;
   role?: UserRole;
   status?: UserStatus;
   first_name?: string;
@@ -87,7 +90,8 @@ export class UsersModel extends BaseModel {
       email VARCHAR(255) UNIQUE NOT NULL,
       phone VARCHAR(20) UNIQUE NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
-      role ENUM('PERSONAL', 'AGENT') NOT NULL,
+      public_key CHAR(36) NOT NULL,
+      role ENUM('CONSUMER', 'AGENT') NOT NULL,
       status ENUM('PENDING', 'ACTIVE', 'SUSPENDED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
       first_name VARCHAR(100) NOT NULL,
       last_name VARCHAR(100) NOT NULL,
@@ -199,7 +203,7 @@ export class UsersModel extends BaseModel {
   async searchUsers(
     searchTerm: string,
     limit: number = 20,
-    offset: number = 0
+    offset: number = 0,
   ): Promise<IUser[]> {
     const sql = `
       SELECT * FROM ${this.tableName}
@@ -215,7 +219,7 @@ export class UsersModel extends BaseModel {
   async getUsersByRole(
     role: UserRole,
     limit?: number,
-    offset?: number
+    offset?: number,
   ): Promise<IUser[]> {
     return await this.findAll({ role }, limit, offset);
   }
@@ -226,7 +230,7 @@ export class UsersModel extends BaseModel {
   async getUsersByStatus(
     status: UserStatus,
     limit?: number,
-    offset?: number
+    offset?: number,
   ): Promise<IUser[]> {
     return await this.findAll({ status }, limit, offset);
   }
@@ -286,7 +290,7 @@ export class UsersModel extends BaseModel {
    */
   async getRegistrationTrend(
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ): Promise<any[]> {
     let sql = `
       SELECT DATE(created_at) as date, COUNT(*) as count

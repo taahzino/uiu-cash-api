@@ -6,12 +6,12 @@ import {
   getAgentAnalytics,
   getRevenueAnalytics,
 } from "../controllers/analytics.controller";
-import { adminAuth } from "../middleware/auth";
+import { authenticateAdmin } from "../middleware/auth";
 
 const router = Router();
 
 // All routes require admin authentication
-router.use(adminAuth);
+router.use(authenticateAdmin);
 
 router.get("/dashboard", getDashboardAnalytics);
 router.get("/transactions", getTransactionAnalytics);

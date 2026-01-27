@@ -1,13 +1,16 @@
 import { Request, Response } from "express";
 import path from "path";
+import { v4 as uuidv4 } from "uuid";
 import logger from "../config/_logger";
 import { Users, UserRole, UserStatus } from "../models/Users.model";
 import { Wallets } from "../models/Wallets.model";
-import { Transactions, TransactionType, TransactionStatus } from "../models/Transactions.model";
-import { SystemConfig } from "../models/SystemConfig.model";
 import {
-  generateUserToken,
-} from "../utilities/jwt";
+  Transactions,
+  TransactionType,
+  TransactionStatus,
+} from "../models/Transactions.model";
+import { SystemConfig } from "../models/SystemConfig.model";
+import { generateToken } from "../utilities/jwt";
 import {
   hashPassword,
   validatePasswordStrength,
@@ -25,13 +28,15 @@ import {
 } from "../utilities/response";
 
 // Import platform wallet simulation
-const platformWallet = require(path.join(__dirname, "../../simulation/platform_wallet"));
+const platformWallet = require(
+  path.join(__dirname, "../../simulation/platform_wallet"),
+);
 
 /**
- * User Registration Controller
- * POST /api/auth/register
+ * Consumer Registration Controller
+ * POST /api/auth/consumer/register
  */
-export const userRegister = async (req: Request, res: Response) => {
+export const consumerRegister = async (req: Request, res: Response) => {
   try {
     const {
       email,
@@ -63,16 +68,21 @@ export const userRegister = async (req: Request, res: Response) => {
     // Hash password
     const password_hash = await hashPassword(password);
 
+    // Generate public key for JWT validation
+    const public_key = uuidv4();
+
     // Determine user status based on role
-    // PERSONAL users are automatically ACTIVE
+    // CONSUMER users are automatically ACTIVE
     // AGENT users need admin approval (PENDING)
-    const userStatus = role === UserRole.PERSONAL ? UserStatus.ACTIVE : UserStatus.PENDING;
+    const userStatus =
+      role === UserRole.CONSUMER ? UserStatus.ACTIVE : UserStatus.PENDING;
 
     // Create user
     const newUser = await Users.createUser({
       email,
       phone,
       password_hash,
+      public_key,
       first_name: firstName,
       last_name: lastName,
       role,
@@ -86,22 +96,29 @@ export const userRegister = async (req: Request, res: Response) => {
       user_id: newUser.id,
     });
 
-    // Give onboarding bonus to PERSONAL users only
+    // Give onboarding bonus to CONSUMER users only
     let bonusGiven = false;
-    if (role === UserRole.PERSONAL) {
+    if (role === UserRole.CONSUMER) {
       try {
         // Get onboarding bonus amount from system config
         const bonusConfig = await SystemConfig.findByKey("onboarding_bonus");
-        const bonusAmount = bonusConfig ? parseFloat(bonusConfig.config_value) : 50.00;
+        const bonusAmount = bonusConfig
+          ? parseFloat(bonusConfig.config_value)
+          : 50.0;
 
         // Check if platform has sufficient balance
         if (platformWallet.hasSufficientBalance(bonusAmount)) {
           // Deduct from platform wallet
           platformWallet.deductBalance(bonusAmount, "Onboarding Bonus");
-          
+
           // Credit to user wallet
-          const updatedBalance = parseFloat(newWallet.balance.toString()) + bonusAmount;
-          await Wallets.updateBalance(newWallet.id, updatedBalance, updatedBalance);
+          const updatedBalance =
+            parseFloat(newWallet.balance.toString()) + bonusAmount;
+          await Wallets.updateBalance(
+            newWallet.id,
+            updatedBalance,
+            updatedBalance,
+          );
 
           // Create transaction record
           await Transactions.createTransaction({
@@ -130,9 +147,13 @@ export const userRegister = async (req: Request, res: Response) => {
           }
 
           bonusGiven = true;
-          logger.info(`Onboarding bonus of ৳${bonusAmount} given to user ${newUser.id}`);
+          logger.info(
+            `Onboarding bonus of ৳${bonusAmount} given to user ${newUser.id}`,
+          );
         } else {
-          logger.warn(`Platform wallet has insufficient balance to give onboarding bonus to user ${newUser.id}`);
+          logger.warn(
+            `Platform wallet has insufficient balance to give onboarding bonus to user ${newUser.id}`,
+          );
         }
       } catch (bonusError: any) {
         logger.error(`Failed to give onboarding bonus: ${bonusError.message}`);
@@ -140,13 +161,16 @@ export const userRegister = async (req: Request, res: Response) => {
       }
     }
 
-    logger.info(`User registered: ${newUser.id} (${email}) - Status: ${userStatus}${bonusGiven ? ' - Bonus: ৳50' : ''}`);
+    logger.info(
+      `Consumer registered: ${newUser.id} (${email}) - Status: ${userStatus}${bonusGiven ? " - Bonus: ৳50" : ""}`,
+    );
 
-    const message = role === UserRole.PERSONAL 
-      ? (bonusGiven 
+    const message =
+      role === UserRole.CONSUMER
+        ? bonusGiven
           ? "Registration successful! You've received ৳50 welcome bonus. You can now log in."
-          : "Registration successful. You can now log in.")
-      : "Registration successful. Your agent account is pending admin approval.";
+          : "Registration successful. You can now log in."
+        : "Registration successful. Your agent account is pending admin approval.";
 
     return sendResponse(res, STATUS_CREATED, {
       message,
@@ -172,10 +196,10 @@ export const userRegister = async (req: Request, res: Response) => {
 };
 
 /**
- * User Login Controller
- * POST /api/auth/login
+ * Consumer Login Controller
+ * POST /api/auth/consumer/login
  */
-export const userLogin = async (req: Request, res: Response) => {
+export const consumerLogin = async (req: Request, res: Response) => {
   try {
     const { identifier, password } = req.body;
 
@@ -209,11 +233,7 @@ export const userLogin = async (req: Request, res: Response) => {
     }
 
     // Generate token
-    const token = generateUserToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    const token = generateToken(user.id, user.public_key, "Consumer");
 
     // Update login info
     await Users.updateLoginInfo(user.id);
@@ -227,7 +247,7 @@ export const userLogin = async (req: Request, res: Response) => {
       message: "Login successful",
       data: {
         token,
-        user: {
+        profile: {
           id: user.id,
           email: user.email,
           phone: user.phone,
@@ -237,8 +257,23 @@ export const userLogin = async (req: Request, res: Response) => {
           status: user.status,
           emailVerified: user.email_verified,
           phoneVerified: user.phone_verified,
-          walletBalance: wallet?.balance || 0,
+          dateOfBirth: user.date_of_birth,
+          nidNumber: user.nid_number,
+          createdAt: user.created_at,
+          wallet: wallet
+            ? {
+                balance: wallet.balance,
+                availableBalance: wallet.available_balance,
+                pendingBalance: wallet.pending_balance,
+                currency: wallet.currency,
+                dailyLimit: wallet.daily_limit,
+                monthlyLimit: wallet.monthly_limit,
+                dailySpent: wallet.daily_spent,
+                monthlySpent: wallet.monthly_spent,
+              }
+            : null,
         },
+        userType: "Consumer",
       },
     });
   } catch (error: any) {
@@ -250,12 +285,46 @@ export const userLogin = async (req: Request, res: Response) => {
 };
 
 /**
- * Get Current User Profile
- * GET /api/auth/profile
+ * Consumer Logout Controller
+ * POST /api/auth/consumer/logout
+ * Regenerates the public_key to invalidate all existing tokens
  */
-export const getUserProfile = async (req: Request, res: Response) => {
+export const consumerLogout = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return sendResponse(res, STATUS_UNAUTHORIZED, {
+        message: "User authentication required",
+      });
+    }
+
+    // Generate new public key to invalidate all existing tokens
+    const new_public_key = uuidv4();
+
+    // Update user's public key
+    await Users.updateUser(userId, { public_key: new_public_key });
+
+    logger.info(`User logged out: ${userId} - All tokens invalidated`);
+
+    return sendResponse(res, STATUS_OK, {
+      message: "Logout successful. All sessions have been terminated.",
+    });
+  } catch (error: any) {
+    logger.error("User logout error: " + error.message);
+    return sendResponse(res, STATUS_INTERNAL_SERVER_ERROR, {
+      message: "An error occurred during logout",
+    });
+  }
+};
+
+/**
+ * Get Current Consumer Profile
+ * GET /api/auth/consumer/profile
+ */
+export const getConsumerProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
 
     if (!userId) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
@@ -313,12 +382,12 @@ export const getUserProfile = async (req: Request, res: Response) => {
 };
 
 /**
- * Update User Profile
- * PUT /api/auth/profile
+ * Update Consumer Profile
+ * PUT /api/auth/consumer/profile
  */
-export const updateUserProfile = async (req: Request, res: Response) => {
+export const updateConsumerProfile = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { firstName, lastName, dateOfBirth } = req.body;
 
     if (!userId) {
@@ -362,11 +431,11 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 
 /**
  * Change Password
- * PUT /api/auth/change-password
+ * PUT /api/auth/consumer/change-password
  */
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const { currentPassword, newPassword } = req.body;
 
     if (!userId) {
@@ -397,7 +466,7 @@ export const changePassword = async (req: Request, res: Response) => {
     // Verify current password
     const isPasswordValid = await verifyPassword(
       currentPassword,
-      user.password_hash
+      user.password_hash,
     );
     if (!isPasswordValid) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {

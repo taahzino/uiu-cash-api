@@ -36,14 +36,15 @@ const platformWallet = require("../../simulation/platform_wallet");
  */
 export const addMoney = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     if (!userId) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
         message: "User authentication required",
       });
     }
 
-    const { amount, cardNumber, cvv, expiryMonth, expiryYear, cardHolderName } = req.body;
+    const { amount, cardNumber, cvv, expiryMonth, expiryYear, cardHolderName } =
+      req.body;
 
     // Get user and wallet
     const user = await Users.findById(userId);
@@ -80,12 +81,12 @@ export const addMoney = async (req: Request, res: Response) => {
       cvv,
       expiryMonth,
       expiryYear,
-      amount
+      amount,
     );
 
     if (!bankDeduction.success) {
       logger.warn(
-        `Card transaction failed for user ${userId}: ${bankDeduction.message}`
+        `Card transaction failed for user ${userId}: ${bankDeduction.message}`,
       );
       return sendResponse(res, STATUS_BAD_REQUEST, {
         message: bankDeduction.message,
@@ -146,7 +147,7 @@ export const addMoney = async (req: Request, res: Response) => {
     // Removed duplicate update
 
     logger.info(
-      `Add money successful: User ${userId} added ৳${amount} from ${cardType} card ${maskedCard}`
+      `Add money successful: User ${userId} added ৳${amount} from ${cardType} card ${maskedCard}`,
     );
 
     return sendResponse(res, STATUS_OK, {
@@ -194,7 +195,7 @@ export const addMoney = async (req: Request, res: Response) => {
  */
 export const sendMoney = async (req: Request, res: Response) => {
   try {
-    const senderId = req.user?.userId;
+    const senderId = req.user?.id;
     if (!senderId) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
         message: "User authentication required",
@@ -310,7 +311,7 @@ export const sendMoney = async (req: Request, res: Response) => {
     await Wallets.updateBalance(
       senderWallet.id,
       senderNewBalance,
-      senderNewAvailable
+      senderNewAvailable,
     );
 
     // Update sender spending
@@ -331,7 +332,7 @@ export const sendMoney = async (req: Request, res: Response) => {
     await Wallets.updateBalance(
       recipientWallet.id,
       recipientNewBalance,
-      recipientNewAvailable
+      recipientNewAvailable,
     );
 
     // Create ledger entry for recipient (credit)
@@ -361,15 +362,15 @@ export const sendMoney = async (req: Request, res: Response) => {
             recipient_name: `${recipient.first_name} ${recipient.last_name}`,
             amount_sent: amount,
           },
-        }
+        },
       );
 
       logger.info(
-        `Platform wallet credited with ৳${feeAmount} fee from transaction ${transaction.transaction_id}`
+        `Platform wallet credited with ৳${feeAmount} fee from transaction ${transaction.transaction_id}`,
       );
     } catch (platformError: any) {
       logger.error(
-        `Failed to credit platform wallet for transaction ${transaction.transaction_id}: ${platformError.message}`
+        `Failed to credit platform wallet for transaction ${transaction.transaction_id}: ${platformError.message}`,
       );
       // Continue - transaction succeeded, platform wallet update is supplementary
     }
@@ -381,7 +382,7 @@ export const sendMoney = async (req: Request, res: Response) => {
     });
 
     logger.info(
-      `Send money successful: ${senderId} sent ৳${amount} to ${recipient.id} (Fee: ৳${feeAmount})`
+      `Send money successful: ${senderId} sent ৳${amount} to ${recipient.id} (Fee: ৳${feeAmount})`,
     );
 
     return sendResponse(res, STATUS_OK, {
@@ -422,7 +423,7 @@ export const sendMoney = async (req: Request, res: Response) => {
  */
 export const getTransactionHistory = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     if (!userId) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
         message: "User authentication required",
@@ -444,7 +445,7 @@ export const getTransactionHistory = async (req: Request, res: Response) => {
       userId,
       limitNum,
       offset,
-      conditions
+      conditions,
     );
     const total = await Transactions.countByUserId(userId, conditions);
 
@@ -487,7 +488,7 @@ export const getTransactionHistory = async (req: Request, res: Response) => {
  */
 export const getTransactionDetails = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     if (!userId) {
       return sendResponse(res, STATUS_UNAUTHORIZED, {
         message: "User authentication required",

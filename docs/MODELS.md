@@ -10,8 +10,8 @@ All database models use **CHAR(8)** for primary keys with custom nanoid generati
 
 #### **1. Users** (`users`)
 
-- **Purpose**: Main user accounts (PERSONAL and AGENT)
-- **Roles**: PERSONAL, AGENT
+- **Purpose**: Main user accounts (CONSUMER and AGENT)
+- **Roles**: CONSUMER, AGENT
 - **Status**: ACTIVE, INACTIVE, SUSPENDED, LOCKED
 - **Features**: Email/phone verification, password, account status (ACTIVE, INACTIVE, SUSPENDED, LOCKED)
 - **Key Methods**: createUser, findByEmail, findByPhone, updateLoginAttempts
@@ -219,7 +219,7 @@ All database models use **CHAR(8)** for primary keys with custom nanoid generati
   - All values editable by admins
   - Auto-initialized on database setup
 - **Key Methods**: createConfig, findByKey, updateByKey, getAllConfigs
-- **Default Configs**: agent_commission_rate, onboarding_bonus, send_money_fee, cash_out_fee_percentage, bank_transfer_fee_percentage, bank_transfer_min_fee, max_transaction_limit, personal_daily_limit, personal_monthly_limit, agent_daily_limit, agent_monthly_limit, min_wallet_balance, agent_min_float
+- **Default Configs**: agent_commission_rate, onboarding_bonus, send_money_fee, cash_out_fee_percentage, bank_transfer_fee_percentage, bank_transfer_min_fee, max_transaction_limit, consumer_daily_limit, consumer_monthly_limit, agent_daily_limit, agent_monthly_limit, min_wallet_balance, agent_min_float
 - **Relationships**: None
 
 ---

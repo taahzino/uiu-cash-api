@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
 import logger from "../config/_logger";
 import { Users } from "../models/Users.model";
-import { Transactions, TransactionStatus, TransactionType } from "../models/Transactions.model";
-import { Agents } from "../models/Agents.model";
+import {
+  Transactions,
+  TransactionStatus,
+  TransactionType,
+} from "../models/Transactions.model";
+import { Agents, AgentStatus } from "../models/Agents.model";
 import { Wallets } from "../models/Wallets.model";
 import {
   sendResponse,
@@ -22,26 +26,40 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     const pendingUsers = await Users.count({ status: "PENDING" });
     const suspendedUsers = await Users.count({ status: "SUSPENDED" });
 
-    // Get personal vs agent users
-    const personalUsers = await Users.count({ role: "PERSONAL" });
+    // Get consumer vs agent users
+    const consumerUsers = await Users.count({ role: "CONSUMER" });
     const agentUsers = await Users.count({ role: "AGENT" });
 
     // Get total transactions
     const totalTransactions = await Transactions.count();
-    const completedTransactions = await Transactions.countByStatus(TransactionStatus.COMPLETED);
-    const pendingTransactions = await Transactions.countByStatus(TransactionStatus.PENDING);
-    const failedTransactions = await Transactions.countByStatus(TransactionStatus.FAILED);
+    const completedTransactions = await Transactions.countByStatus(
+      TransactionStatus.COMPLETED,
+    );
+    const pendingTransactions = await Transactions.countByStatus(
+      TransactionStatus.PENDING,
+    );
+    const failedTransactions = await Transactions.countByStatus(
+      TransactionStatus.FAILED,
+    );
 
     // Get transaction totals by type
-    const sendMoneyTotal = await Transactions.getTotalByType(TransactionType.SEND_MONEY);
-    const addMoneyTotal = await Transactions.getTotalByType(TransactionType.ADD_MONEY);
-    const cashOutTotal = await Transactions.getTotalByType(TransactionType.CASH_OUT);
-    const billPaymentTotal = await Transactions.getTotalByType(TransactionType.BILL_PAYMENT);
+    const sendMoneyTotal = await Transactions.getTotalByType(
+      TransactionType.SEND_MONEY,
+    );
+    const addMoneyTotal = await Transactions.getTotalByType(
+      TransactionType.ADD_MONEY,
+    );
+    const cashOutTotal = await Transactions.getTotalByType(
+      TransactionType.CASH_OUT,
+    );
+    const billPaymentTotal = await Transactions.getTotalByType(
+      TransactionType.BILL_PAYMENT,
+    );
 
     // Get total agents
     const totalAgents = await Agents.count();
-    const activeAgents = await Agents.count({ status: "ACTIVE" });
-    const pendingAgents = await Agents.count({ status: "PENDING" });
+    const activeAgents = await Agents.countByStatus(AgentStatus.ACTIVE);
+    const pendingAgents = await Agents.countByStatus(AgentStatus.PENDING);
 
     // Get recent transactions
     const recentTransactions = await Transactions.findAll({}, 10, 0);
@@ -57,7 +75,7 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
           active: activeUsers,
           pending: pendingUsers,
           suspended: suspendedUsers,
-          personal: personalUsers,
+          consumer: consumerUsers,
           agent: agentUsers,
         },
         transactions: {
@@ -121,7 +139,9 @@ export const getTransactionAnalytics = async (req: Request, res: Response) => {
     // Get transactions by status
     const byStatus = {
       pending: await Transactions.countByStatus(TransactionStatus.PENDING),
-      processing: await Transactions.countByStatus(TransactionStatus.PROCESSING),
+      processing: await Transactions.countByStatus(
+        TransactionStatus.PROCESSING,
+      ),
       completed: await Transactions.countByStatus(TransactionStatus.COMPLETED),
       failed: await Transactions.countByStatus(TransactionStatus.FAILED),
     };
@@ -131,8 +151,12 @@ export const getTransactionAnalytics = async (req: Request, res: Response) => {
       sendMoney: await Transactions.getTotalByType(TransactionType.SEND_MONEY),
       addMoney: await Transactions.getTotalByType(TransactionType.ADD_MONEY),
       cashOut: await Transactions.getTotalByType(TransactionType.CASH_OUT),
-      billPayment: await Transactions.getTotalByType(TransactionType.BILL_PAYMENT),
-      bankTransfer: await Transactions.getTotalByType(TransactionType.BANK_TRANSFER),
+      billPayment: await Transactions.getTotalByType(
+        TransactionType.BILL_PAYMENT,
+      ),
+      bankTransfer: await Transactions.getTotalByType(
+        TransactionType.BANK_TRANSFER,
+      ),
       cashback: await Transactions.getTotalByType(TransactionType.CASHBACK),
       commission: await Transactions.getTotalByType(TransactionType.COMMISSION),
     };
@@ -141,7 +165,7 @@ export const getTransactionAnalytics = async (req: Request, res: Response) => {
     const volumeTrend = await Transactions.getTransactionTrend(
       startDate as string,
       endDate as string,
-      groupBy as string
+      groupBy as string,
     );
 
     // Calculate total revenue (fees collected)
@@ -177,7 +201,7 @@ export const getUserAnalytics = async (req: Request, res: Response) => {
     // Get user registration trend
     const registrationTrend = await Users.getRegistrationTrend(
       startDate as string,
-      endDate as string
+      endDate as string,
     );
 
     // Get users by status
@@ -190,7 +214,7 @@ export const getUserAnalytics = async (req: Request, res: Response) => {
 
     // Get users by role
     const byRole = {
-      personal: await Users.count({ role: "PERSONAL" }),
+      consumer: await Users.count({ role: "CONSUMER" }),
       agent: await Users.count({ role: "AGENT" }),
     };
 
@@ -222,9 +246,9 @@ export const getAgentAnalytics = async (req: Request, res: Response) => {
   try {
     // Get agent stats
     const totalAgents = await Agents.count();
-    const activeAgents = await Agents.count({ status: "ACTIVE" });
-    const pendingAgents = await Agents.count({ status: "PENDING" });
-    const suspendedAgents = await Agents.count({ status: "SUSPENDED" });
+    const activeAgents = await Agents.countByStatus(AgentStatus.ACTIVE);
+    const pendingAgents = await Agents.countByStatus(AgentStatus.PENDING);
+    const suspendedAgents = await Agents.countByStatus(AgentStatus.SUSPENDED);
 
     // Get top agents by commission
     const topAgents = await Agents.getTopAgentsByCommission(10);
@@ -268,14 +292,16 @@ export const getRevenueAnalytics = async (req: Request, res: Response) => {
     // Get total fees collected
     const totalFees = await Transactions.getTotalFees(
       startDate as string,
-      endDate as string
+      endDate as string,
     );
 
     // Get fees by transaction type
     const feesByType = {
       sendMoney: await Transactions.getFeesByType(TransactionType.SEND_MONEY),
       cashOut: await Transactions.getFeesByType(TransactionType.CASH_OUT),
-      bankTransfer: await Transactions.getFeesByType(TransactionType.BANK_TRANSFER),
+      bankTransfer: await Transactions.getFeesByType(
+        TransactionType.BANK_TRANSFER,
+      ),
     };
 
     // Get commission paid to agents
@@ -287,7 +313,7 @@ export const getRevenueAnalytics = async (req: Request, res: Response) => {
     // Get revenue trend
     const revenueTrend = await Transactions.getRevenueTrend(
       startDate as string,
-      endDate as string
+      endDate as string,
     );
 
     return sendResponse(res, STATUS_OK, {

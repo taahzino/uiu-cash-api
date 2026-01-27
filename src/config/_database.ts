@@ -5,7 +5,7 @@ import logger from "./_logger";
 dotenv.config(
   process.env.NODE_ENV === "production"
     ? { path: ".env.production" }
-    : { path: ".env.development" }
+    : { path: ".env.development" },
 );
 
 /**
@@ -121,12 +121,14 @@ export async function initializeDatabase(): Promise<void> {
       {
         config_key: "agent_commission_rate",
         config_value: "1.50",
-        description: "Global commission rate percentage for all agents (e.g., 1.50 for 1.5%)",
+        description:
+          "Global commission rate percentage for all agents (e.g., 1.50 for 1.5%)",
       },
       {
         config_key: "onboarding_bonus",
         config_value: "50.00",
-        description: "Bonus amount given to new users upon registration (in BDT)",
+        description:
+          "Bonus amount given to new users upon registration (in BDT)",
       },
       {
         config_key: "send_money_fee",
@@ -136,12 +138,14 @@ export async function initializeDatabase(): Promise<void> {
       {
         config_key: "cash_out_fee_percentage",
         config_value: "1.85",
-        description: "Percentage fee for cash out transactions (e.g., 1.85 for 1.85%)",
+        description:
+          "Percentage fee for cash out transactions (e.g., 1.85 for 1.85%)",
       },
       {
         config_key: "bank_transfer_fee_percentage",
         config_value: "1.50",
-        description: "Percentage fee for bank transfer transactions (e.g., 1.50 for 1.5%)",
+        description:
+          "Percentage fee for bank transfer transactions (e.g., 1.50 for 1.5%)",
       },
       {
         config_key: "bank_transfer_min_fee",
@@ -154,14 +158,14 @@ export async function initializeDatabase(): Promise<void> {
         description: "Maximum amount per single transaction (in BDT)",
       },
       {
-        config_key: "personal_daily_limit",
+        config_key: "consumer_daily_limit",
         config_value: "50000.00",
-        description: "Daily transaction limit for personal users (in BDT)",
+        description: "Daily transaction limit for consumer users (in BDT)",
       },
       {
-        config_key: "personal_monthly_limit",
+        config_key: "consumer_monthly_limit",
         config_value: "200000.00",
-        description: "Monthly transaction limit for personal users (in BDT)",
+        description: "Monthly transaction limit for consumer users (in BDT)",
       },
       {
         config_key: "agent_daily_limit",
@@ -194,7 +198,6 @@ export async function initializeDatabase(): Promise<void> {
     }
 
     logger.info("All default system configurations initialized");
-
   } catch (error: any) {
     logger.error("Database initialization failed: " + error.message);
     logger.error(error);

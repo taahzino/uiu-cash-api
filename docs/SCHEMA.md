@@ -28,7 +28,7 @@
 
 UIU Cash is a comprehensive digital financial services platform supporting:
 
-- Multi-role user management (Personal, Agent)
+- Multi-role user management (Consumer, Agent)
 - Separate admin system for platform management
 - Digital wallet operations with real-time balance tracking
 - Peer-to-peer money transfers
@@ -100,7 +100,7 @@ UIU Cash is a comprehensive digital financial services platform supporting:
 | `email`                 | VARCHAR(255) | UNIQUE, NOT NULL                                      | User email address                                   |
 | `phone`                 | VARCHAR(20)  | UNIQUE, NOT NULL                                      | User phone number                                    |
 | `password_hash`         | VARCHAR(255) | NOT NULL                                              | Bcrypt hashed password                               |
-| `role`                  | ENUM         | NOT NULL                                              | User role: PERSONAL, AGENT                           |
+| `role`                  | ENUM         | NOT NULL                                              | User role: CONSUMER, AGENT                           |
 | `status`                | ENUM         | NOT NULL, DEFAULT 'PENDING'                           | Account status: PENDING, ACTIVE, SUSPENDED, REJECTED |
 | `first_name`            | VARCHAR(100) | NOT NULL                                              | User's first name                                    |
 | `last_name`             | VARCHAR(100) | NOT NULL                                              | User's last name                                     |
@@ -674,8 +674,8 @@ cash_out_fee_percentage = 1.85 (Percentage fee for cash out)
 bank_transfer_fee_percentage = 1.50 (Percentage fee for bank transfer)
 bank_transfer_min_fee = 10.00 (Minimum fee for bank transfer)
 max_transaction_limit = 25000.00 (Maximum per transaction)
-personal_daily_limit = 50000.00 (Daily limit for personal users)
-personal_monthly_limit = 200000.00 (Monthly limit for personal users)
+consumer_daily_limit = 50000.00 (Daily limit for personal users)
+consumer_monthly_limit = 200000.00 (Monthly limit for personal users)
 agent_daily_limit = 100000.00 (Daily limit for agent users)
 agent_monthly_limit = 500000.00 (Monthly limit for agent users)
 min_wallet_balance = 0.00 (Minimum wallet balance)
@@ -1040,7 +1040,7 @@ CREATE TRIGGER trigger_create_wallet
 AFTER INSERT ON users
 FOR EACH ROW
 BEGIN
-    IF NEW.role IN ('PERSONAL', 'BUSINESS', 'AGENT') THEN
+    IF NEW.role IN ('CONSUMER', 'BUSINESS', 'AGENT') THEN
         INSERT INTO wallets (id, user_id, balance, available_balance)
         VALUES (UUID(), NEW.id, 0.00, 0.00);
     END IF;
@@ -1203,8 +1203,8 @@ INSERT INTO system_config (config_key, config_value, description) VALUES
   ('bank_transfer_fee_percentage', '1.50', 'Percentage fee for bank transfer transactions (e.g., 1.50 for 1.5%)'),
   ('bank_transfer_min_fee', '10.00', 'Minimum fee for bank transfer transactions (in BDT)'),
   ('max_transaction_limit', '25000.00', 'Maximum amount per single transaction (in BDT)'),
-  ('personal_daily_limit', '50000.00', 'Daily transaction limit for personal users (in BDT)'),
-  ('personal_monthly_limit', '200000.00', 'Monthly transaction limit for personal users (in BDT)'),
+  ('consumer_daily_limit', '50000.00', 'Daily transaction limit for personal users (in BDT)'),
+  ('consumer_monthly_limit', '200000.00', 'Monthly transaction limit for personal users (in BDT)'),
   ('agent_daily_limit', '100000.00', 'Daily transaction limit for agent users (in BDT)'),
   ('agent_monthly_limit', '500000.00', 'Monthly transaction limit for agent users (in BDT)'),
   ('min_wallet_balance', '0.00', 'Minimum wallet balance that must be maintained (in BDT)'),

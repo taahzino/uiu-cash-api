@@ -3,6 +3,7 @@
  * Initializes all database tables and creates first SUPER_ADMIN
  */
 
+import { v4 as uuidv4 } from "uuid";
 import logger from "../config/_logger";
 import { Admins } from "../models/Admins.model";
 import { AgentCashouts } from "../models/AgentCashouts.model";
@@ -13,6 +14,7 @@ import { Billers } from "../models/Billers.model";
 import { BillPayments } from "../models/BillPayments.model";
 import { Ledgers } from "../models/Ledgers.model";
 import { Offers } from "../models/Offers.model";
+import { PlatformWalletTransactions } from "../models/PlatformWalletTransactions.model";
 import { Sessions } from "../models/Sessions.model";
 import { SystemConfig } from "../models/SystemConfig.model";
 import { Transactions } from "../models/Transactions.model";
@@ -50,6 +52,7 @@ async function initializeDatabase() {
     await AgentCashouts.initialize();
     await BillPayments.initialize();
     await BankTransfers.initialize();
+    await PlatformWalletTransactions.initialize();
 
     // Level 5: Offers and related tables
     logger.info("Initializing offer tables...");
@@ -65,13 +68,16 @@ async function initializeDatabase() {
 
     // Initialize default system configuration
     logger.info("Setting up default system configurations...");
-    
-    const commissionRateConfig = await SystemConfig.findByKey("agent_commission_rate");
+
+    const commissionRateConfig = await SystemConfig.findByKey(
+      "agent_commission_rate",
+    );
     if (!commissionRateConfig) {
       await SystemConfig.createConfig({
         config_key: "agent_commission_rate",
         config_value: "1.50",
-        description: "Global commission rate percentage for all agents (e.g., 1.50 for 1.5%)",
+        description:
+          "Global commission rate percentage for all agents (e.g., 1.50 for 1.5%)",
       });
       logger.info("✓ Agent commission rate set to 1.50%");
     }
@@ -86,12 +92,13 @@ async function initializeDatabase() {
       logger.info("✓ Send money fee set to ৳5.00");
     }
 
-    const onboardingBonusConfig = await SystemConfig.findByKey("onboarding_bonus");
+    const onboardingBonusConfig =
+      await SystemConfig.findByKey("onboarding_bonus");
     if (!onboardingBonusConfig) {
       await SystemConfig.createConfig({
         config_key: "onboarding_bonus",
         config_value: "50.00",
-        description: "Onboarding bonus amount for new PERSONAL users in BDT",
+        description: "Onboarding bonus amount for new CONSUMER users in BDT",
       });
       logger.info("✓ Onboarding bonus set to ৳50.00");
     }
@@ -106,10 +113,12 @@ async function initializeDatabase() {
 
       const password = "Admin@123"; // Change this password immediately after first login
       const password_hash = await hashPassword(password);
+      const public_key = uuidv4();
 
       await Admins.createAdmin({
         email: "admin@uiucash.com",
         password_hash,
+        public_key,
         name: "System Administrator",
         created_by: null,
       });
@@ -118,7 +127,7 @@ async function initializeDatabase() {
       logger.info("Email: admin@uiucash.com");
       logger.info("Password: Admin@123");
       logger.warn(
-        "IMPORTANT: Change this password immediately after first login!"
+        "IMPORTANT: Change this password immediately after first login!",
       );
     } else {
       logger.info("Admin account already exists.");

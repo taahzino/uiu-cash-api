@@ -184,15 +184,15 @@ export class PlatformWalletTransactionsModel extends BaseModel {
         ? countResults[0].total
         : 0;
 
-    // Get transactions
+    // Get transactions (LIMIT/OFFSET cannot be parameterized)
     const sql = `
       SELECT * FROM ${this.tableName} 
       ${whereClause}
       ORDER BY created_at DESC 
-      LIMIT ? OFFSET ?
+      LIMIT ${limit} OFFSET ${offset}
     `;
 
-    const results = await this.executeQuery(sql, [...params, limit, offset]);
+    const results = await this.executeQuery(sql, params);
 
     const rows = Array.isArray(results) ? results : [];
 

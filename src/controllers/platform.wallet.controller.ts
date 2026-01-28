@@ -80,6 +80,15 @@ export const getPlatformWalletTransactions = async (
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
 
+    console.log(
+      `[Platform Wallet Transactions] Fetching page ${pageNum}, limit ${limitNum}`,
+    );
+    if (startDate || endDate) {
+      console.log(
+        `[Platform Wallet Transactions] Date filter - Start: ${startDate}, End: ${endDate}`,
+      );
+    }
+
     const filters: any = {};
     if (startDate) {
       filters.start_date = new Date(startDate as string);
@@ -92,6 +101,10 @@ export const getPlatformWalletTransactions = async (
       pageNum,
       limitNum,
       filters,
+    );
+
+    console.log(
+      `[Platform Wallet Transactions] Retrieved ${transactions.length} transactions out of ${total} total`,
     );
 
     return sendResponse(res, STATUS_OK, {

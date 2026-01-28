@@ -31,7 +31,7 @@ export const sendResponse = (
   body: ResponseBody,
   callback?: Function
 ) => {
-  console.log([res.statusCode, code, JSON.stringify(body)]);
+  console.log([res.statusCode, code]);
   res.status(code).json(body);
 
   if (callback) {

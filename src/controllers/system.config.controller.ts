@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import logger from "../config/_logger";
 import { SystemConfig } from "../models/SystemConfig.model";
+import { AuditLogs, AuditAction } from "../models/AuditLogs.model";
 import {
   sendResponse,
   STATUS_BAD_REQUEST,
@@ -86,6 +87,21 @@ export const createOrUpdateConfig = async (req: Request, res: Response) => {
     if (existingConfig) {
       // Update existing config
       await SystemConfig.updateByKey(key, value, description);
+
+      // Create audit log
+      await AuditLogs.createAuditLog({
+        action: AuditAction.UPDATE,
+        entity_type: "SYSTEM_CONFIG",
+        entity_id: key,
+        admin_id: adminId,
+        old_values: {
+          value: existingConfig.config_value,
+          description: existingConfig.description,
+        },
+        new_values: { value, description },
+        user_agent: req.headers["user-agent"],
+      });
+
       logger.info(`Admin ${adminId} updated config: ${key}`);
 
       return sendResponse(res, STATUS_OK, {
@@ -104,6 +120,16 @@ export const createOrUpdateConfig = async (req: Request, res: Response) => {
         config_key: key,
         config_value: value,
         description: description || null,
+      });
+
+      // Create audit log
+      await AuditLogs.createAuditLog({
+        action: AuditAction.CREATE,
+        entity_type: "SYSTEM_CONFIG",
+        entity_id: key,
+        admin_id: adminId,
+        new_values: { value, description },
+        user_agent: req.headers["user-agent"],
       });
 
       logger.info(`Admin ${adminId} created config: ${key}`);
@@ -151,6 +177,20 @@ export const updateConfig = async (req: Request, res: Response) => {
     }
 
     await SystemConfig.updateByKey(key, value, description);
+
+    // Create audit log
+    await AuditLogs.createAuditLog({
+      action: AuditAction.UPDATE,
+      entity_type: "SYSTEM_CONFIG",
+      entity_id: key,
+      admin_id: adminId,
+      old_values: {
+        value: existingConfig.config_value,
+        description: existingConfig.description,
+      },
+      new_values: { value, description },
+      user_agent: req.headers["user-agent"],
+    });
 
     logger.info(`Admin ${adminId} updated config: ${key}`);
 

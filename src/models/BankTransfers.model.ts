@@ -100,13 +100,15 @@ export class BankTransfersModel extends BaseModel {
     limit: number = 50,
     offset: number = 0,
   ): Promise<IBankTransfer[]> {
+    // Use string interpolation for LIMIT/OFFSET to avoid MySQL prepared statement issues
+    // Values are already validated as numbers, so this is safe
     const sql = `
       SELECT * FROM ${this.tableName}
       WHERE user_id = ?
       ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(String(limit))} OFFSET ${parseInt(String(offset))}
     `;
-    const results = await this.executeQuery(sql, [userId, limit, offset]);
+    const results = await this.executeQuery(sql, [userId]);
     return Array.isArray(results) ? results : [];
   }
 

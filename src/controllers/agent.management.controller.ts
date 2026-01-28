@@ -3,6 +3,7 @@ import logger from "../config/_logger";
 import { Agents, AgentStatus } from "../models/Agents.model";
 import { Users, UserStatus } from "../models/Users.model";
 import { Wallets } from "../models/Wallets.model";
+import { AuditLogs, AuditAction } from "../models/AuditLogs.model";
 import {
   sendResponse,
   STATUS_BAD_REQUEST,
@@ -209,6 +210,18 @@ export const approveAgent = async (req: Request, res: Response) => {
     // Update user status to ACTIVE
     await Users.updateById(agent.user_id, { status: UserStatus.ACTIVE });
 
+    // Create audit log
+    await AuditLogs.createAuditLog({
+      action: AuditAction.AGENT_APPROVAL,
+      entity_type: "AGENT",
+      entity_id: id,
+      admin_id: adminId,
+      user_id: agent.user_id,
+      old_values: { status: AgentStatus.PENDING },
+      new_values: { status: AgentStatus.ACTIVE },
+      user_agent: req.headers["user-agent"],
+    });
+
     logger.info(`Admin ${adminId} approved agent ${id} (${agent.agent_code})`);
 
     return sendResponse(res, STATUS_OK, {
@@ -267,6 +280,18 @@ export const rejectAgent = async (req: Request, res: Response) => {
 
     // Update user status to REJECTED
     await Users.updateById(agent.user_id, { status: UserStatus.REJECTED });
+
+    // Create audit log
+    await AuditLogs.createAuditLog({
+      action: AuditAction.AGENT_APPROVAL,
+      entity_type: "AGENT",
+      entity_id: id,
+      admin_id: adminId,
+      user_id: agent.user_id,
+      old_values: { status: AgentStatus.PENDING },
+      new_values: { status: AgentStatus.REJECTED, reason },
+      user_agent: req.headers["user-agent"],
+    });
 
     logger.info(
       `Admin ${adminId} rejected agent ${id} (${agent.agent_code}) - Reason: ${reason}`,

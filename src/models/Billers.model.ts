@@ -8,6 +8,7 @@ export enum BillType {
   INTERNET = "INTERNET",
   MOBILE = "MOBILE",
   TV = "TV",
+  ORGANIZATION = "ORGANIZATION",
 }
 
 export enum BillerStatus {
@@ -63,7 +64,7 @@ export class BillersModel extends BaseModel {
       id CHAR(8) PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       biller_code VARCHAR(50) UNIQUE NOT NULL,
-      bill_type ENUM('ELECTRICITY', 'GAS', 'WATER', 'INTERNET', 'MOBILE', 'TV') NOT NULL,
+      bill_type ENUM('ELECTRICITY', 'GAS', 'WATER', 'INTERNET', 'MOBILE', 'TV', 'ORGANIZATION') NOT NULL,
       balance DECIMAL(15,2) DEFAULT 0.00,
       total_payments INT DEFAULT 0,
       status ENUM('ACTIVE', 'SUSPENDED', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
@@ -110,14 +111,14 @@ export class BillersModel extends BaseModel {
 
   async updateBiller(
     id: string,
-    updates: IUpdateBiller
+    updates: IUpdateBiller,
   ): Promise<IBiller | null> {
     return await this.updateById(id, updates);
   }
 
   async updateStatus(
     id: string,
-    status: BillerStatus
+    status: BillerStatus,
   ): Promise<IBiller | null> {
     return await this.updateById(id, { status });
   }
@@ -133,7 +134,7 @@ export class BillersModel extends BaseModel {
   async updateBalance(
     id: string,
     amount: number,
-    connection?: any
+    connection?: any,
   ): Promise<void> {
     const sql = `
       UPDATE ${this.tableName}
@@ -167,7 +168,7 @@ export class BillersModel extends BaseModel {
 
   async searchBillers(
     searchTerm: string,
-    limit: number = 20
+    limit: number = 20,
   ): Promise<IBiller[]> {
     const sql = `
       SELECT * FROM ${this.tableName}

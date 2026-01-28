@@ -34,3 +34,39 @@
 {"level":"error","message":"Get agents paginated error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'LIMIT 20' at line 1","service":"user-service","timestamp":"2026-01-27T19:08:58.723Z"}
 {"level":"error","message":"Failed to debit platform wallet for transaction TXN-20260128-761010: platformWallet.debitBalance is not a function","service":"user-service","timestamp":"2026-01-27T21:08:28.377Z"}
 {"level":"error","message":"Failed to debit platform wallet for transaction TXN-20260128-733359: platformWallet.debitBalance is not a function","service":"user-service","timestamp":"2026-01-27T21:15:34.430Z"}
+{"level":"error","message":"Get bank transfer history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T21:38:15.074Z"}
+{"level":"error","message":"Get bank transfer history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T21:38:15.198Z"}
+{"level":"error","message":"Get bank transfer history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T21:38:18.205Z"}
+{"level":"error","message":"Get bank transfer history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T21:38:18.253Z"}
+{"level":"error","message":"Get bank transfer history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T22:12:15.251Z"}
+{"level":"error","message":"Get bank transfer history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T22:12:15.318Z"}
+{"level":"error","message":"Get bank transfer history error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T22:12:31.319Z"}
+{"level":"error","message":"Create biller error: Data truncated for column 'bill_type' at row 1","service":"user-service","timestamp":"2026-01-27T22:49:53.530Z"}
+{"level":"error","message":"Get biller details error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T22:53:22.710Z"}
+{"level":"error","message":"Get biller details error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T22:55:24.465Z"}
+{"level":"error","message":"Get biller details error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-27T22:55:39.940Z"}
+{"level":"error","message":"Bill payment error: Lock wait timeout exceeded; try restarting transaction","service":"user-service","timestamp":"2026-01-27T23:20:50.640Z"}
+{"level":"error","message":"Bill payment error: Lock wait timeout exceeded; try restarting transaction","service":"user-service","timestamp":"2026-01-27T23:22:57.530Z"}
+{"level":"error","message":"Platform wallet migration error: Table 'uiu_cash.platform_wallet' doesn't exist","service":"user-service","timestamp":"2026-01-28T00:19:00.182Z"}
+{"level":"error","message":"Platform wallet migration error: Table 'uiu_cash.platform_wallet' doesn't exist","service":"user-service","timestamp":"2026-01-28T00:19:13.828Z"}
+{"level":"error","message":"Bank transfer error: platformWallet.addBalance is not a function","service":"user-service","timestamp":"2026-01-28T01:05:08.706Z"}
+{"level":"error","message":"Failed to debit platform wallet for transaction TXN-20260128-506530: platformWallet.debitBalance is not a function","service":"user-service","timestamp":"2026-01-28T01:18:34.566Z"}
+{"level":"error","message":"Failed to debit platform wallet commission for transaction TXN-20260128-599791: platformWallet.debitBalance is not a function","service":"user-service","timestamp":"2026-01-28T01:21:18.586Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:21:34.356Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:21:34.419Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:21:34.515Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:21:34.649Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:22:02.571Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:22:02.600Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:22:02.647Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:22:02.672Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:22:12.420Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:22:12.469Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:22:31.476Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:22:31.499Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:23:19.900Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:23:19.950Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:23:20.074Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:23:20.139Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:23:35.492Z"}
+{"level":"error","message":"Get platform wallet transactions error: Incorrect arguments to mysqld_stmt_execute","service":"user-service","timestamp":"2026-01-28T01:23:37.074Z"}

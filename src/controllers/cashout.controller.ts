@@ -11,6 +11,8 @@ import { Wallets } from "../models/Wallets.model";
 import { Ledgers, EntryType } from "../models/Ledgers.model";
 import { SystemConfig } from "../models/SystemConfig.model";
 import { Users } from "../models/Users.model";
+import { PlatformWallet } from "../models/PlatformWallet.model";
+import { PlatformTransactionType } from "../models/PlatformWalletTransactions.model";
 import { getConnection } from "../config/_database";
 import {
   sendResponse,
@@ -291,6 +293,18 @@ export const completeCashOut = async (req: Request, res: Response) => {
         agentWallet.id,
         agentNewBalance,
         agentNewBalance,
+      );
+
+      // Deduct commission from platform wallet
+      await PlatformWallet.deductBalance(
+        cashout.commission,
+        PlatformTransactionType.COMMISSION_PAID,
+        `Commission paid to agent ${agent.agent_code} for cash out`,
+        {
+          relatedTransactionId: transaction.id,
+          relatedAgentId: agent.id,
+          relatedUserId: transaction.sender_id || undefined,
+        },
       );
 
       // Create ledger entry for agent commission (CREDIT)

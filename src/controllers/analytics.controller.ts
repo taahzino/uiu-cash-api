@@ -8,6 +8,7 @@ import {
 } from "../models/Transactions.model";
 import { Agents, AgentStatus } from "../models/Agents.model";
 import { Wallets } from "../models/Wallets.model";
+import { PlatformWallet } from "../models/PlatformWallet.model";
 import {
   sendResponse,
   STATUS_INTERNAL_SERVER_ERROR,
@@ -64,61 +65,69 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     // Get recent transactions
     const recentTransactions = await Transactions.findAll({}, 10, 0);
 
-    // Calculate total platform balance
-    const totalPlatformBalance = await calculateTotalPlatformBalance();
+    // Get platform wallet statistics
+    const platformStats = await PlatformWallet.getStatistics();
+
+    const data = {
+      users: {
+        total: totalUsers,
+        active: activeUsers,
+        pending: pendingUsers,
+        suspended: suspendedUsers,
+        consumer: consumerUsers,
+        agent: agentUsers,
+      },
+      transactions: {
+        total: totalTransactions,
+        completed: completedTransactions,
+        pending: pendingTransactions,
+        failed: failedTransactions,
+        byType: {
+          sendMoney: {
+            count: sendMoneyTotal.count,
+            amount: sendMoneyTotal.amount,
+          },
+          addMoney: {
+            count: addMoneyTotal.count,
+            amount: addMoneyTotal.amount,
+          },
+          cashOut: {
+            count: cashOutTotal.count,
+            amount: cashOutTotal.amount,
+          },
+          billPayment: {
+            count: billPaymentTotal.count,
+            amount: billPaymentTotal.amount,
+          },
+        },
+      },
+      agents: {
+        total: totalAgents,
+        active: activeAgents,
+        pending: pendingAgents,
+      },
+      platform: {
+        totalBalance: platformStats.balance,
+        revenueCollected: platformStats.totalFeesCollected,
+        bonusGiven: platformStats.totalBonusesGiven,
+        commissionsPaid: platformStats.totalCommissionsPaid,
+        netRevenue: platformStats.netRevenue,
+      },
+      recentTransactions: recentTransactions.map((txn: any) => ({
+        id: txn.id,
+        transactionId: txn.transaction_id,
+        type: txn.type,
+        amount: txn.amount,
+        status: txn.status,
+        createdAt: txn.created_at,
+      })),
+    };
+
+    console.log(data);
 
     return sendResponse(res, STATUS_OK, {
       message: "Dashboard analytics retrieved successfully",
-      data: {
-        users: {
-          total: totalUsers,
-          active: activeUsers,
-          pending: pendingUsers,
-          suspended: suspendedUsers,
-          consumer: consumerUsers,
-          agent: agentUsers,
-        },
-        transactions: {
-          total: totalTransactions,
-          completed: completedTransactions,
-          pending: pendingTransactions,
-          failed: failedTransactions,
-          byType: {
-            sendMoney: {
-              count: sendMoneyTotal.count,
-              amount: sendMoneyTotal.amount,
-            },
-            addMoney: {
-              count: addMoneyTotal.count,
-              amount: addMoneyTotal.amount,
-            },
-            cashOut: {
-              count: cashOutTotal.count,
-              amount: cashOutTotal.amount,
-            },
-            billPayment: {
-              count: billPaymentTotal.count,
-              amount: billPaymentTotal.amount,
-            },
-          },
-        },
-        agents: {
-          total: totalAgents,
-          active: activeAgents,
-          pending: pendingAgents,
-        },
-        platform: {
-          totalBalance: totalPlatformBalance,
-        },
-        recentTransactions: recentTransactions.map((txn: any) => ({
-          id: txn.id,
-          transactionId: txn.transaction_id,
-          type: txn.type,
-          amount: txn.amount,
-          status: txn.status,
-          createdAt: txn.created_at,
-        })),
-      },
+      data: data,
     });
   } catch (error: any) {
     logger.error("Get dashboard analytics error: " + error.message);

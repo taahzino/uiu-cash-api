@@ -79,7 +79,7 @@ export class BillPaymentsModel extends BaseModel {
   }
 
   async createBillPayment(
-    paymentData: ICreateBillPayment
+    paymentData: ICreateBillPayment,
   ): Promise<IBillPayment> {
     const id = await generateUniqueId(this);
     const payment = {
@@ -101,7 +101,7 @@ export class BillPaymentsModel extends BaseModel {
   }
 
   async findByTransactionId(
-    transactionId: string
+    transactionId: string,
   ): Promise<IBillPayment | null> {
     const sql = `SELECT * FROM ${this.tableName} WHERE transaction_id = ? LIMIT 1`;
     const results = await this.executeQuery(sql, [transactionId]);
@@ -111,34 +111,37 @@ export class BillPaymentsModel extends BaseModel {
   async findByUserId(
     userId: string,
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
   ): Promise<IBillPayment[]> {
     const sql = `
       SELECT * FROM ${this.tableName}
       WHERE user_id = ?
       ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(String(limit))} OFFSET ${parseInt(String(offset))}
     `;
-    const results = await this.executeQuery(sql, [userId, limit, offset]);
+    const results = await this.executeQuery(sql, [userId]);
     return Array.isArray(results) ? results : [];
   }
 
   async findByBillerId(
     billerId: string,
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
   ): Promise<IBillPayment[]> {
     const sql = `
       SELECT * FROM ${this.tableName}
       WHERE biller_id = ?
       ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(String(limit))} OFFSET ${parseInt(String(offset))}
     `;
-    const results = await this.executeQuery(sql, [billerId, limit, offset]);
+    const results = await this.executeQuery(sql, [billerId]);
     return Array.isArray(results) ? results : [];
   }
 
-  async completePayment(id: string): Promise<IBillPayment | null> {
+  async completePayment(
+    id: string,
+    connection?: any,
+  ): Promise<IBillPayment | null> {
     const receipt_number = this.generateReceiptNumber();
     const sql = `
       UPDATE ${this.tableName}
@@ -146,14 +149,18 @@ export class BillPaymentsModel extends BaseModel {
           receipt_number = ?
       WHERE id = ?
     `;
-    await this.executeQuery(sql, [receipt_number, id]);
+    if (connection) {
+      await connection.query(sql, [receipt_number, id]);
+    } else {
+      await this.executeQuery(sql, [receipt_number, id]);
+    }
     return await this.findById(id);
   }
 
   async getTotalByBiller(
     billerId: string,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<number> {
     let sql = `
       SELECT COALESCE(SUM(amount), 0) as total

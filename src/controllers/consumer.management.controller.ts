@@ -3,6 +3,7 @@ import logger from "../config/_logger";
 import { Users, UserStatus } from "../models/Users.model";
 import { Wallets } from "../models/Wallets.model";
 import { Transactions } from "../models/Transactions.model";
+import { AuditLogs, AuditAction } from "../models/AuditLogs.model";
 import {
   sendResponse,
   STATUS_BAD_REQUEST,
@@ -229,10 +230,22 @@ export const updateConsumerStatus = async (req: Request, res: Response) => {
       });
     }
 
+    const oldStatus = user.status;
     const updatedUser = await Users.updateStatus(id, status);
 
+    // Create audit log
+    await AuditLogs.createAuditLog({
+      action: AuditAction.STATUS_CHANGE,
+      entity_type: "USER",
+      entity_id: id,
+      admin_id: res.locals.admin?.id,
+      old_values: { status: oldStatus },
+      new_values: { status },
+      user_agent: req.headers["user-agent"],
+    });
+
     logger.info(
-      `Admin ${res.locals.admin?.id} updated user ${id} status to ${status}`,
+      `Admin ${res.locals.admin?.id} updated user ${id} status from ${oldStatus} to ${status}`,
     );
 
     return sendResponse(res, STATUS_OK, {

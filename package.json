@@ -9,7 +9,9 @@
     "build": "tsc",
     "watch": "tsc -w",
     "start": "NODE_ENV=production node dist/app.js",
-    "dev": "NODE_ENV=development nodemon dist/app.js"
+    "dev": "NODE_ENV=development nodemon dist/app.js",
+    "seed:billers": "bun run build && node dist/scripts/seed-billers.js",
+    "migrate:platform-wallet": "bun run build && node dist/scripts/migrate-platform-wallet.js"
   },
   "keywords": [],
   "author": "",

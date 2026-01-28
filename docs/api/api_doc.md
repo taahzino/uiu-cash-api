@@ -20,25 +20,40 @@
    - [Cash In](#cash-in)
    - [Transaction History](#transaction-history)
    - [Transaction Details](#transaction-details)
-4. [Admin - Consumer Management](#admin-consumer-management)
+4. [Bill Payment](#bill-payment)
+   - [Get Billers](#get-billers)
+   - [Pay Bill](#pay-bill)
+   - [Get Bill Payment History](#get-bill-payment-history)
+5. [Bank Transfer](#bank-transfer)
+   - [Initiate Bank Transfer](#initiate-bank-transfer)
+   - [Get Transfer History](#get-transfer-history)
+   - [Get Transfer Details](#get-transfer-details)
+6. [Admin - Consumer Management](#admin-consumer-management)
    - [Get Paginated Consumers](#get-paginated-consumers)
    - [Get Consumer Details](#get-consumer-details)
    - [Update Consumer Status](#update-consumer-status)
    - [Get Consumer Transactions](#get-consumer-transactions)
-5. [Admin - Agent Management](#admin-agent-management)
+7. [Admin - Agent Management](#admin-agent-management)
    - [Get Paginated Agents](#get-paginated-agents)
    - [Get Agent Details](#get-agent-details)
    - [Approve Agent](#approve-agent)
    - [Reject Agent](#reject-agent)
    - [Get Agent Transactions](#get-agent-transactions)
-6. [Admin - Analytics](#admin-analytics)
+8. [Admin - Analytics](#admin-analytics)
    - [Dashboard Analytics](#dashboard-analytics)
    - [Transaction Analytics](#transaction-analytics)
    - [Consumer Analytics](#consumer-analytics)
    - [Agent Analytics](#agent-analytics)
    - [Revenue Analytics](#revenue-analytics)
-7. [Common Patterns](#common-patterns)
-8. [Error Responses](#error-responses)
+9. [Admin - Biller Management](#admin-biller-management)
+   - [Create Biller](#create-biller)
+   - [Get All Billers (Admin)](#get-all-billers-admin)
+   - [Get Biller Details (Admin)](#get-biller-details-admin)
+   - [Update Biller](#update-biller)
+   - [Update Biller Status](#update-biller-status)
+   - [Delete Biller](#delete-biller)
+10. [Common Patterns](#common-patterns)
+11. [Error Responses](#error-responses)
 
 ---
 
@@ -1508,6 +1523,466 @@ GET /api/transactions/T1A2B3C4
 
 ---
 
+## Bill Payment
+
+Base URL: `/api/transactions`
+
+Pay utility bills like electricity, gas, water, internet, mobile, and TV subscriptions. **No fees charged for bill payments.**
+
+### Get Billers
+
+Get list of all active billers for bill payments.
+
+**Endpoint:** `GET /api/transactions/billers`  
+**Authentication:** Required (Consumer Token Only)
+
+**Headers:**
+
+```
+Authorization: Bearer <consumer_token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Description                                                                 |
+| --------- | ------ | -------- | --------------------------------------------------------------------------- |
+| billType  | enum   | No       | Filter by type: ELECTRICITY, GAS, WATER, INTERNET, MOBILE, TV, ORGANIZATION |
+| search    | string | No       | Search billers by name                                                      |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Billers retrieved successfully",
+  "data": {
+    "billers": [
+      {
+        "id": "BILLER01",
+        "name": "Dhaka Electric Supply Company Limited (DESCO)",
+        "billerCode": "DESCO-ELEC",
+        "billType": "ELECTRICITY",
+        "contactEmail": "info@desco.org.bd",
+        "contactPhone": "01713074499",
+        "description": "Electricity supply for Dhaka city area",
+        "logoUrl": null
+      },
+      {
+        "id": "BILLER02",
+        "name": "Grameenphone Limited",
+        "billerCode": "GP-MOBILE",
+        "billType": "MOBILE",
+        "contactEmail": "info@grameenphone.com",
+        "contactPhone": "01713074422",
+        "description": "Mobile operator - Grameenphone",
+        "logoUrl": null
+      },
+      {
+        "id": "BILLER03",
+        "name": "United International University (UIU)",
+        "billerCode": "UIU-ORG",
+        "billType": "ORGANIZATION",
+        "contactEmail": "accounts@uiu.ac.bd",
+        "contactPhone": "01713074333",
+        "description": "University tuition and fees",
+        "logoUrl": null
+      }
+    ],
+    "total": 3
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+
+---
+
+### Pay Bill
+
+Make a bill payment for utilities.
+
+**Endpoint:** `POST /api/transactions/pay-bill`  
+**Authentication:** Required (Consumer Token Only)
+
+**Headers:**
+
+```
+Authorization: Bearer <consumer_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "billerId": "BILLER01",
+  "accountNumber": "1234567890",
+  "amount": 850,
+  "billingMonth": "January",
+  "billingYear": 2026,
+  "description": "Electricity bill for January 2026"
+}
+```
+
+**Field Validations:**
+
+| Field         | Type   | Required | Validation                                     |
+| ------------- | ------ | -------- | ---------------------------------------------- |
+| billerId      | string | Yes      | Valid biller ID                                |
+| accountNumber | string | Yes      | 5-50 characters, alphanumeric and hyphens only |
+| amount        | number | Yes      | Min: ৳10, Max: ৳100,000                        |
+| billingMonth  | string | No       | Valid month name (January-December)            |
+| billingYear   | number | No       | 2020-2100                                      |
+| description   | string | No       | Max 500 characters                             |
+
+**Fee Structure:**
+
+- **৳0 fee** - No fees charged for bill payments
+- Consumer pays exact bill amount
+
+**Success Response (201 Created):**
+
+```json
+{
+  "success": true,
+  "message": "Bill payment completed successfully",
+  "data": {
+    "transactionId": "TRX20260128010",
+    "billerId": "BILLER01",
+    "billerName": "Dhaka Electric Supply Company Limited (DESCO)",
+    "billerCode": "DESCO-ELEC",
+    "billType": "ELECTRICITY",
+    "accountNumber": "1234567890",
+    "amount": 850,
+    "fee": 0,
+    "totalAmount": 850,
+    "status": "COMPLETED",
+    "completedAt": "2026-01-28T11:00:00.000Z",
+    "newBalance": 4150
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+- **400 Bad Request** - Validation errors, insufficient balance, or daily/monthly limit exceeded
+- **403 Forbidden** - Account not active
+- **404 Not Found** - Biller not found or biller not accepting payments
+
+**Notes:**
+
+- **Consumer only** - Bill payments are only available for consumers
+- **No fees** - Zero transaction fees for all bill payments
+- Daily and monthly spending limits apply
+- All bill payments are completed immediately
+- Receipt number is generated automatically upon completion
+
+---
+
+### Get Bill Payment History
+
+Get paginated bill payment history for the authenticated consumer.
+
+**Endpoint:** `GET /api/transactions/bill-payments`  
+**Authentication:** Required (Consumer Token Only)
+
+**Headers:**
+
+```
+Authorization: Bearer <consumer_token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default | Description               |
+| --------- | ------ | -------- | ------- | ------------------------- |
+| page      | number | No       | 1       | Page number               |
+| limit     | number | No       | 10      | Results per page          |
+| billerId  | string | No       | -       | Filter by specific biller |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Bill payment history retrieved successfully",
+  "data": {
+    "payments": [
+      {
+        "id": "BILLPAY1",
+        "transactionId": "TRX20260128010",
+        "biller": {
+          "id": "BILLER01",
+          "name": "Dhaka Electric Supply Company Limited (DESCO)",
+          "billerCode": "DESCO-ELEC",
+          "billType": "ELECTRICITY"
+        },
+        "accountNumber": "1234567890",
+        "amount": 850,
+        "fee": 0,
+        "totalAmount": 850,
+        "status": "COMPLETED",
+        "billingMonth": "January",
+        "billingYear": 2026,
+        "receiptNumber": "RCP-202601-12345",
+        "createdAt": "2026-01-28T11:00:00.000Z",
+        "updatedAt": "2026-01-28T11:00:01.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 5,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+
+**Notes:**
+
+- Consumers can only view their own bill payments
+- Includes receipt numbers for completed payments
+
+---
+
+## Bank Transfer
+
+Base URL: `/api/bank`
+
+Transfer money from your UIU Cash wallet to a bank account. **Agents get bank transfers with no fee and instant completion.**
+
+### Initiate Bank Transfer
+
+Transfer money from your wallet to a bank account.
+
+**Endpoint:** `POST /api/bank/transfer`  
+**Authentication:** Required (Consumer or Agent Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Request Body:**
+
+```json
+{
+  "bankName": "Dutch Bangla Bank",
+  "accountNumber": "1234567890123456",
+  "accountHolderName": "John Doe",
+  "routingNumber": "090271044",
+  "transferType": "INSTANT",
+  "amount": 5000,
+  "description": "Monthly savings"
+}
+```
+
+**Field Validations:**
+
+| Field             | Type   | Required | Validation              |
+| ----------------- | ------ | -------- | ----------------------- |
+| bankName          | string | Yes      | 2-100 characters        |
+| accountNumber     | string | Yes      | 5-50 digits only        |
+| accountHolderName | string | Yes      | 2-255 characters        |
+| routingNumber     | string | No       | 9-20 digits             |
+| transferType      | enum   | No       | `INSTANT` or `STANDARD` |
+| amount            | number | Yes      | Min: ৳10, Max: ৳100,000 |
+| description       | string | No       | Max 500 characters      |
+
+**Fee Structure:**
+
+| User Type | Fee                          | Status                    |
+| --------- | ---------------------------- | ------------------------- |
+| **Agent** | **৳0 (No fee)**              | **COMPLETED immediately** |
+| Consumer  | 1.5% of amount (minimum ৳10) | COMPLETED immediately     |
+
+**Success Response (201 Created):**
+
+```json
+{
+  "success": true,
+  "message": "Bank transfer completed successfully",
+  "data": {
+    "transactionId": "TRX20260128005",
+    "amount": 5000,
+    "processingFee": 0,
+    "totalAmount": 5000,
+    "bankName": "Dutch Bangla Bank",
+    "accountNumber": "****3456",
+    "transferType": "INSTANT",
+    "status": "COMPLETED",
+    "completedAt": "2026-01-28T10:30:00.000Z"
+  }
+}
+```
+
+**Consumer Example (with fee):**
+
+```json
+{
+  "success": true,
+  "message": "Bank transfer completed successfully",
+  "data": {
+    "transactionId": "TRX20260128006",
+    "amount": 5000,
+    "processingFee": 75,
+    "totalAmount": 5075,
+    "bankName": "Dutch Bangla Bank",
+    "accountNumber": "****3456",
+    "transferType": "INSTANT",
+    "status": "COMPLETED",
+    "completedAt": "2026-01-28T10:35:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+- **400 Bad Request** - Validation errors, insufficient balance, or daily/monthly limit exceeded
+- **404 Not Found** - Wallet not found
+
+**Notes:**
+
+- **Agents receive bank transfers with no fee** - helps agents convert digital balance to cash
+- **All transfers are completed immediately** after validation
+- Transfer amount includes fee for consumers (amount + fee deducted from wallet)
+- Daily and monthly spending limits apply
+- Account number is masked in response (last 4 digits shown)
+- Both INSTANT and STANDARD transfers are processed immediately in simulation
+
+---
+
+### Get Transfer History
+
+Get paginated bank transfer history for the authenticated user.
+
+**Endpoint:** `GET /api/bank/transfers`  
+**Authentication:** Required (Consumer or Agent Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default | Description                                              |
+| --------- | ------ | -------- | ------- | -------------------------------------------------------- |
+| page      | number | No       | 1       | Page number                                              |
+| limit     | number | No       | 10      | Results per page                                         |
+| status    | enum   | No       | -       | Filter by status: PENDING, PROCESSING, COMPLETED, FAILED |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Bank transfer history retrieved successfully",
+  "data": {
+    "transfers": [
+      {
+        "id": "TRNSF001",
+        "transactionId": "TRX20260128005",
+        "bankName": "Dutch Bangla Bank",
+        "accountNumber": "****3456",
+        "accountHolderName": "John Doe",
+        "amount": 5000,
+        "fee": 0,
+        "totalAmount": 5000,
+        "status": "COMPLETED",
+        "referenceNumber": "BNK202601280001",
+        "createdAt": "2026-01-28T10:30:00.000Z",
+        "updatedAt": "2026-01-28T10:30:01.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 15,
+      "totalPages": 2
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token
+
+---
+
+### Get Transfer Details
+
+Get detailed information about a specific bank transfer.
+
+**Endpoint:** `GET /api/bank/transfers/:id`  
+**Authentication:** Required (Consumer or Agent Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description      |
+| --------- | ------ | -------- | ---------------- |
+| id        | string | Yes      | Bank transfer ID |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Bank transfer details retrieved successfully",
+  "data": {
+    "id": "TRNSF001",
+    "transactionId": "TRX20260128005",
+    "bankName": "Dutch Bangla Bank",
+    "accountNumber": "****3456",
+    "accountHolderName": "John Doe",
+    "routingNumber": "090271044",
+    "amount": 5000,
+    "fee": 0,
+    "totalAmount": 5000,
+    "status": "COMPLETED",
+    "referenceNumber": "BNK202601280001",
+    "createdAt": "2026-01-28T10:30:00.000Z",
+    "updatedAt": "2026-01-28T10:30:01.000Z",
+    "transaction": {
+      "transactionId": "TRX20260128005",
+      "status": "COMPLETED",
+      "description": "Bank transfer to Dutch Bangla Bank",
+      "initiatedAt": "2026-01-28T10:30:00.000Z",
+      "completedAt": "2026-01-28T10:30:01.000Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing token, or unauthorized access to transfer
+- **404 Not Found** - Bank transfer not found
+
+**Notes:**
+
+- Users can only view their own bank transfers
+- Full routing number is displayed in transfer details
+
+---
+
 ## Admin - Consumer Management
 
 Base URL: `/api/admin/consumers`
@@ -2437,6 +2912,908 @@ Authorization: Bearer <admin_token>
 **Error Responses:**
 
 - **401 Unauthorized** - Invalid or missing admin token
+
+---
+
+## Admin - Biller Management
+
+Base URL: `/api/admin/billers`
+
+All biller management endpoints require admin authentication.
+
+### Create Biller
+
+Create a new biller for bill payment services.
+
+**Endpoint:** `POST /api/admin/billers`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "Dhaka Electric Supply Company Limited (DESCO)",
+  "billerCode": "DESCO-ELEC",
+  "billType": "ELECTRICITY",
+  "contactEmail": "info@desco.org.bd",
+  "contactPhone": "01713074499",
+  "description": "Electricity supply for Dhaka city area",
+  "logoUrl": "https://example.com/desco-logo.png"
+}
+```
+
+**Field Validations:**
+
+| Field        | Type   | Required | Validation                                                     |
+| ------------ | ------ | -------- | -------------------------------------------------------------- |
+| name         | string | Yes      | 2-255 characters                                               |
+| billerCode   | string | Yes      | 2-50 characters, uppercase, numbers, hyphens, underscores only |
+| billType     | enum   | Yes      | ELECTRICITY, GAS, WATER, INTERNET, MOBILE, TV, ORGANIZATION    |
+| contactEmail | string | No       | Valid email format                                             |
+| contactPhone | string | No       | Bangladeshi phone format: 01[3-9]XXXXXXXX                      |
+| description  | string | No       | Max 1000 characters                                            |
+| logoUrl      | string | No       | Valid URL format                                               |
+
+**Success Response (201 Created):**
+
+```json
+{
+  "success": true,
+  "message": "Biller created successfully",
+  "data": {
+    "biller": {
+      "id": "BILLER01",
+      "name": "Dhaka Electric Supply Company Limited (DESCO)",
+      "billerCode": "DESCO-ELEC",
+      "billType": "ELECTRICITY",
+      "status": "ACTIVE",
+      "contactEmail": "info@desco.org.bd",
+      "contactPhone": "01713074499",
+      "description": "Electricity supply for Dhaka city area",
+      "logoUrl": "https://example.com/desco-logo.png",
+      "balance": 0,
+      "totalPayments": 0,
+      "createdAt": "2026-01-28T11:30:00.000Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **409 Conflict** - Biller code already exists
+- **400 Bad Request** - Validation errors
+
+---
+
+### Get All Billers (Admin)
+
+Get paginated list of all billers with filtering options.
+
+**Endpoint:** `GET /api/admin/billers`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default | Description                                                                 |
+| --------- | ------ | -------- | ------- | --------------------------------------------------------------------------- |
+| page      | number | No       | 1       | Page number                                                                 |
+| limit     | number | No       | 20      | Results per page                                                            |
+| billType  | enum   | No       | -       | Filter by type: ELECTRICITY, GAS, WATER, INTERNET, MOBILE, TV, ORGANIZATION |
+| status    | enum   | No       | -       | Filter by status: ACTIVE, SUSPENDED, INACTIVE                               |
+| search    | string | No       | -       | Search billers by name or code                                              |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Billers retrieved successfully",
+  "data": {
+    "billers": [
+      {
+        "id": "BILLER01",
+        "name": "Dhaka Electric Supply Company Limited (DESCO)",
+        "billerCode": "DESCO-ELEC",
+        "billType": "ELECTRICITY",
+        "status": "ACTIVE",
+        "balance": 125000,
+        "totalPayments": 450,
+        "contactEmail": "info@desco.org.bd",
+        "contactPhone": "01713074499",
+        "description": "Electricity supply for Dhaka city area",
+        "logoUrl": null,
+        "createdAt": "2026-01-28T11:30:00.000Z",
+        "updatedAt": "2026-01-28T11:30:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 15,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+---
+
+### Get Biller Details (Admin)
+
+Get detailed information about a specific biller including payment statistics.
+
+**Endpoint:** `GET /api/admin/billers/:id`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Biller ID   |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Biller details retrieved successfully",
+  "data": {
+    "biller": {
+      "id": "BILLER01",
+      "name": "Dhaka Electric Supply Company Limited (DESCO)",
+      "billerCode": "DESCO-ELEC",
+      "billType": "ELECTRICITY",
+      "status": "ACTIVE",
+      "balance": 125000,
+      "totalPayments": 450,
+      "contactEmail": "info@desco.org.bd",
+      "contactPhone": "01713074499",
+      "description": "Electricity supply for Dhaka city area",
+      "logoUrl": null,
+      "createdAt": "2026-01-28T11:30:00.000Z",
+      "updatedAt": "2026-01-28T11:30:00.000Z"
+    },
+    "statistics": {
+      "totalPayments": 450,
+      "completedPayments": 448,
+      "totalRevenue": 125000
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Biller not found
+
+---
+
+### Update Biller
+
+Update biller information.
+
+**Endpoint:** `PUT /api/admin/billers/:id`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Biller ID   |
+
+**Request Body:**
+
+All fields are optional. Only include fields you want to update.
+
+```json
+{
+  "name": "DESCO - Updated Name",
+  "contactEmail": "newemail@desco.org.bd",
+  "contactPhone": "01713074400",
+  "description": "Updated description",
+  "status": "ACTIVE"
+}
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Biller updated successfully",
+  "data": {
+    "biller": {
+      "id": "BILLER01",
+      "name": "DESCO - Updated Name",
+      "billerCode": "DESCO-ELEC",
+      "billType": "ELECTRICITY",
+      "status": "ACTIVE",
+      "contactEmail": "newemail@desco.org.bd",
+      "contactPhone": "01713074400",
+      "description": "Updated description",
+      "logoUrl": null,
+      "balance": 125000,
+      "totalPayments": 450,
+      "updatedAt": "2026-01-28T12:00:00.000Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Biller not found
+- **409 Conflict** - Biller code already exists (if updating code)
+- **400 Bad Request** - Validation errors
+
+---
+
+### Update Biller Status
+
+Update only the status of a biller (quick action).
+
+**Endpoint:** `PATCH /api/admin/billers/:id/status`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Biller ID   |
+
+**Request Body:**
+
+```json
+{
+  "status": "SUSPENDED"
+}
+```
+
+**Status Values:**
+
+- `ACTIVE` - Biller is accepting payments
+- `SUSPENDED` - Temporarily disabled
+- `INACTIVE` - Permanently disabled
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Biller status updated successfully",
+  "data": {
+    "biller": {
+      "id": "BILLER01",
+      "name": "Dhaka Electric Supply Company Limited (DESCO)",
+      "billerCode": "DESCO-ELEC",
+      "status": "SUSPENDED",
+      "updatedAt": "2026-01-28T12:10:00.000Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Biller not found
+- **400 Bad Request** - Invalid status value
+
+---
+
+### Delete Biller
+
+Deactivate a biller (sets status to INACTIVE).
+
+**Endpoint:** `DELETE /api/admin/billers/:id`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | string | Yes      | Biller ID   |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Biller deactivated successfully"
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Biller not found
+- **400 Bad Request** - Cannot delete biller with existing payment records
+
+**Notes:**
+
+- Billers with existing payment records cannot be deleted
+- Consider using SUSPENDED or INACTIVE status instead
+- DELETE operation sets status to INACTIVE rather than removing from database
+
+---
+
+## Admin - System Configuration
+
+Base URL: `/api/admin/config`
+
+All system configuration endpoints require admin authentication. Public configurations can be accessed without authentication.
+
+### Get All System Configurations
+
+Get all system configuration key-value pairs.
+
+**Endpoint:** `GET /api/admin/config`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "System configurations retrieved successfully",
+  "data": {
+    "configs": [
+      {
+        "key": "agent_commission_rate",
+        "value": "1.5",
+        "description": "Commission percentage for agent cash out operations",
+        "updatedAt": "2026-01-27T10:30:00.000Z"
+      },
+      {
+        "key": "send_money_fee_tier1",
+        "value": "0",
+        "description": "Send money fee for amounts ₹0-₹1000",
+        "updatedAt": "2026-01-27T10:30:00.000Z"
+      },
+      {
+        "key": "bank_transfer_fee_rate",
+        "value": "1.5",
+        "description": "Bank transfer fee percentage for consumers",
+        "updatedAt": "2026-01-27T10:30:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+---
+
+### Get Configuration by Key
+
+Get a specific system configuration value.
+
+**Endpoint:** `GET /api/admin/config/:key`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description       |
+| --------- | ------ | -------- | ----------------- |
+| key       | string | Yes      | Configuration key |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Configuration retrieved successfully",
+  "data": {
+    "config": {
+      "key": "agent_commission_rate",
+      "value": "1.5",
+      "description": "Commission percentage for agent cash out operations",
+      "updatedAt": "2026-01-27T10:30:00.000Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Configuration key not found
+
+---
+
+### Create or Update Configuration
+
+Create a new configuration or update an existing one.
+
+**Endpoint:** `POST /api/admin/config`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Request Body:**
+
+```json
+{
+  "key": "new_feature_enabled",
+  "value": "true",
+  "description": "Enable new feature for all users"
+}
+```
+
+**Field Validations:**
+
+| Field       | Type   | Required | Validation                                      |
+| ----------- | ------ | -------- | ----------------------------------------------- |
+| key         | string | Yes      | 1-100 characters, alphanumeric with underscores |
+| value       | string | Yes      | 1-1000 characters                               |
+| description | string | No       | Max 500 characters                              |
+
+**Success Response (200 OK):** _(if updating)_
+
+```json
+{
+  "success": true,
+  "message": "Configuration updated successfully",
+  "data": {
+    "config": {
+      "key": "agent_commission_rate",
+      "value": "2.0",
+      "description": "Commission percentage for agent cash out operations"
+    }
+  }
+}
+```
+
+**Success Response (201 Created):** _(if creating)_
+
+```json
+{
+  "success": true,
+  "message": "Configuration created successfully",
+  "data": {
+    "config": {
+      "key": "new_feature_enabled",
+      "value": "true",
+      "description": "Enable new feature for all users"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **400 Bad Request** - Validation errors
+
+---
+
+### Update Configuration
+
+Update an existing configuration value.
+
+**Endpoint:** `PUT /api/admin/config/:key`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**URL Parameters:**
+
+| Parameter | Type   | Required | Description       |
+| --------- | ------ | -------- | ----------------- |
+| key       | string | Yes      | Configuration key |
+
+**Request Body:**
+
+```json
+{
+  "value": "2.5",
+  "description": "Updated commission rate for Q1 2026"
+}
+```
+
+**Field Validations:**
+
+| Field       | Type   | Required | Validation         |
+| ----------- | ------ | -------- | ------------------ |
+| value       | string | Yes      | 1-1000 characters  |
+| description | string | No       | Max 500 characters |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Configuration updated successfully",
+  "data": {
+    "config": {
+      "key": "agent_commission_rate",
+      "value": "2.5",
+      "description": "Updated commission rate for Q1 2026"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+- **404 Not Found** - Configuration key not found
+- **400 Bad Request** - Validation errors
+
+---
+
+### Get Public Configurations
+
+Get non-sensitive configurations accessible to all users without authentication.
+
+**Endpoint:** `GET /api/config/public`  
+**Authentication:** None (Public)
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Public configurations retrieved successfully",
+  "data": {
+    "configs": [
+      {
+        "key": "app_version",
+        "value": "1.0.0"
+      },
+      {
+        "key": "maintenance_mode",
+        "value": "false"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+
+- **500 Internal Server Error** - Server error
+
+**Notes:**
+
+- Only safe, non-sensitive configuration values are exposed
+- No authentication required
+- Useful for mobile apps to check app version or maintenance status
+
+---
+
+## Admin - Platform Wallet Management
+
+Base URL: `/api/admin/platform-wallet`
+
+All platform wallet endpoints require admin authentication. These endpoints provide monitoring and reconciliation capabilities for the platform's financial operations.
+
+### Get Platform Wallet Statistics
+
+Get comprehensive statistics about the platform wallet including balance, fees collected, commissions paid, and net revenue.
+
+**Endpoint:** `GET /api/admin/platform-wallet/stats`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Platform wallet statistics retrieved successfully",
+  "data": {
+    "balance": 1026474.25,
+    "totalFeesCollected": 45320.5,
+    "totalCommissionsPaid": 12450.75,
+    "totalBonusesGiven": 8250.0,
+    "netRevenue": 24619.75,
+    "lastTransactionAt": "2026-01-28T06:15:30.000Z"
+  }
+}
+```
+
+**Response Fields:**
+
+| Field                | Type   | Description                                     |
+| -------------------- | ------ | ----------------------------------------------- |
+| balance              | number | Current platform wallet balance                 |
+| totalFeesCollected   | number | Cumulative fees collected from all transactions |
+| totalCommissionsPaid | number | Cumulative commissions paid to agents           |
+| totalBonusesGiven    | number | Cumulative bonuses and cashback given to users  |
+| netRevenue           | number | Net revenue (fees - commissions - bonuses)      |
+| lastTransactionAt    | string | Timestamp of last platform wallet transaction   |
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+---
+
+### Perform Platform Wallet Reconciliation
+
+Verify the integrity of the platform wallet by comparing the current balance with calculated balance from all transactions.
+
+**Endpoint:** `GET /api/admin/platform-wallet/reconcile`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Success Response (200 OK):** _(when reconciliation passes)_
+
+```json
+{
+  "success": true,
+  "message": "Platform wallet reconciliation successful",
+  "data": {
+    "success": true,
+    "currentBalance": 1026474.25,
+    "calculatedBalance": 1026474.25,
+    "discrepancy": 0.0,
+    "reconciliationTimestamp": "2026-01-28T06:20:00.000Z"
+  }
+}
+```
+
+**Success Response (200 OK):** _(when discrepancy detected)_
+
+```json
+{
+  "success": true,
+  "message": "Reconciliation failed: discrepancy of ৳15.50",
+  "data": {
+    "success": false,
+    "currentBalance": 1026474.25,
+    "calculatedBalance": 1026489.75,
+    "discrepancy": 15.5,
+    "reconciliationTimestamp": "2026-01-28T06:20:00.000Z"
+  }
+}
+```
+
+**Reconciliation Logic:**
+
+```
+calculatedBalance = SUM(CREDIT transactions) - SUM(DEBIT transactions)
+discrepancy = |currentBalance - calculatedBalance|
+success = discrepancy < ৳0.01 (allows tiny rounding errors)
+```
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+**Notes:**
+
+- Run this endpoint regularly (daily recommended) to detect discrepancies early
+- Discrepancies may indicate missing transactions, database issues, or bugs
+- Small discrepancies (<৳0.01) are tolerated due to floating-point rounding
+
+---
+
+### Get Platform Wallet Transaction History
+
+Get paginated transaction history for the platform wallet with optional date filtering.
+
+**Endpoint:** `GET /api/admin/platform-wallet/transactions`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Default | Description           |
+| --------- | ------ | -------- | ------- | --------------------- |
+| page      | number | No       | 1       | Page number           |
+| limit     | number | No       | 50      | Results per page      |
+| startDate | string | No       | -       | Start date (ISO 8601) |
+| endDate   | string | No       | -       | End date (ISO 8601)   |
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Platform wallet transactions retrieved successfully",
+  "data": {
+    "transactions": [
+      {
+        "id": 1523,
+        "transactionType": "FEE_COLLECTED",
+        "entryType": "CREDIT",
+        "amount": 18.5,
+        "balanceBefore": 1026455.75,
+        "balanceAfter": 1026474.25,
+        "relatedTransactionId": "TRX12345",
+        "relatedUserId": "USER0001",
+        "relatedAgentId": null,
+        "description": "Cash out fee collected from user",
+        "metadata": {
+          "transactionType": "CASH_OUT",
+          "feeRate": 1.85
+        },
+        "createdAt": "2026-01-28T06:15:30.000Z"
+      },
+      {
+        "id": 1522,
+        "transactionType": "COMMISSION_PAID",
+        "entryType": "DEBIT",
+        "amount": 15.0,
+        "balanceBefore": 1026470.75,
+        "balanceAfter": 1026455.75,
+        "relatedTransactionId": "TRX12345",
+        "relatedUserId": "USER0001",
+        "relatedAgentId": "AGENT001",
+        "description": "Commission paid to agent AG1234567 for cash out",
+        "metadata": {
+          "agentCode": "AG1234567",
+          "commissionRate": 1.5
+        },
+        "createdAt": "2026-01-28T06:15:30.000Z"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 31,
+      "totalItems": 1523,
+      "itemsPerPage": 50
+    }
+  }
+}
+```
+
+**Transaction Types:**
+
+| Type              | Entry Type | Description                        |
+| ----------------- | ---------- | ---------------------------------- |
+| FEE_COLLECTED     | CREDIT     | Transaction fees from users        |
+| COMMISSION_PAID   | DEBIT      | Commissions paid to agents         |
+| BONUS_GIVEN       | DEBIT      | Welcome bonuses given to new users |
+| CASHBACK_GIVEN    | DEBIT      | Promotional cashback               |
+| ADD_MONEY_DEPOSIT | CREDIT     | Deposits from external banks       |
+| REVENUE_OTHER     | CREDIT     | Other platform revenue             |
+| EXPENSE_OTHER     | DEBIT      | Other platform expenses            |
+| SETTLEMENT        | BOTH       | Settlement operations              |
+| ADJUSTMENT        | BOTH       | Manual adjustments                 |
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+---
+
+### Get Platform Wallet Revenue Summary
+
+Get comprehensive revenue summary including all-time statistics.
+
+**Endpoint:** `GET /api/admin/platform-wallet/revenue-summary`  
+**Authentication:** Required (Admin Token)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin_token>
+```
+
+**Success Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "message": "Platform wallet revenue summary retrieved successfully",
+  "data": {
+    "allTime": {
+      "totalFeesCollected": 45320.5,
+      "totalCommissionsPaid": 12450.75,
+      "totalBonusesGiven": 8250.0,
+      "netRevenue": 24619.75
+    },
+    "currentBalance": 1026474.25,
+    "lastTransactionAt": "2026-01-28T06:15:30.000Z"
+  }
+}
+```
+
+**Response Fields:**
+
+| Field                        | Type   | Description                                |
+| ---------------------------- | ------ | ------------------------------------------ |
+| allTime.totalFeesCollected   | number | Total fees collected since platform launch |
+| allTime.totalCommissionsPaid | number | Total commissions paid to agents           |
+| allTime.totalBonusesGiven    | number | Total bonuses and cashback given           |
+| allTime.netRevenue           | number | Net profit (fees - commissions - bonuses)  |
+| currentBalance               | number | Current platform wallet balance            |
+| lastTransactionAt            | string | Timestamp of most recent transaction       |
+
+**Error Responses:**
+
+- **401 Unauthorized** - Invalid or missing admin token
+
+**Notes:**
+
+- Net revenue = Total fees collected - Total commissions paid - Total bonuses given
+- Use this endpoint for financial reporting and analytics dashboards
+- All amounts are in BDT (৳)
 
 ---
 

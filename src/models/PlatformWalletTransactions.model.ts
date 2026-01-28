@@ -26,7 +26,7 @@ interface PlatformWalletTransaction {
   amount: number;
   balance_before: number;
   balance_after: number;
-  related_transaction_id?: number; // FK to transactions table
+  related_transaction_id?: string; // FK to transactions table (UUID/CHAR36)
   related_user_id?: string; // User involved
   related_agent_id?: string; // Agent involved
   description: string;

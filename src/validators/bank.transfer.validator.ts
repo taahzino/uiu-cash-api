@@ -23,9 +23,11 @@ export const bankTransferSchema = z.object({
     .min(9, "Routing number must be at least 9 digits")
     .max(20, "Routing number cannot exceed 20 digits")
     .optional(),
-  transferType: z.enum(["INSTANT", "STANDARD"], {
-    message: "Transfer type must be either INSTANT or STANDARD",
-  }),
+  transferType: z
+    .enum(["INSTANT", "STANDARD"], {
+      message: "Transfer type must be either INSTANT or STANDARD",
+    })
+    .optional(),
   amount: z
     .number()
     .positive("Amount must be greater than 0")
